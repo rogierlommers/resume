@@ -3,9 +3,11 @@ LABEL description="Resume from Rogier Lommers"
 LABEL maintainer="Rogier Lommers <rogier@lommers.org>"
 
 # add binary and assets
-COPY --chown=1000:1000 bin/resume /resume/
-COPY --chown=1000:1000 /src/static /resume
+COPY --chown=1000:1000 ./bin/resume /resume/
+COPY --chown=1000:1000 ./src/assets /assets
+
+# binary will serve on 8080
+EXPOSE 8080
 
 # run binary
-WORKDIR "/resume"
-CMD ["resume"]
+CMD ["/resume/resume"]
