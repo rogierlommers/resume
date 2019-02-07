@@ -24,13 +24,10 @@ func main() {
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		referer := r.Header.Get("Referer")
-		xForwardedFor := r.Header.Get("X-Forwarded-For")
-
 		logrus.WithFields(logrus.Fields{
-			"referer":         referer,
-			"X-Forwarded-For": xForwardedFor,
-		}).Infof("incoming request: %s", r.RequestURI)
+			"requestURI":      r.RequestURI,
+			"X-Forwarded-For": r.Header.Get("X-Forwarded-For"),
+		}).Info("incoming request")
 
 		next.ServeHTTP(w, r)
 	})
