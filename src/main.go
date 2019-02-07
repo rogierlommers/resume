@@ -25,13 +25,11 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		referer := r.Header.Get("Referer")
-		userAgent := r.Header.Get("User-Agent")
-		remoteAddr := r.RemoteAddr
+		xForwardedFor := r.Header.Get("X-Forwarded-For")
 
 		logrus.WithFields(logrus.Fields{
-			"referer":     referer,
-			"user_agent":  userAgent,
-			"remote_addr": remoteAddr,
+			"referer":         referer,
+			"X-Forwarded-For": xForwardedFor,
 		}).Infof("incoming request: %s", r.RequestURI)
 
 		next.ServeHTTP(w, r)
