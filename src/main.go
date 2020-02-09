@@ -15,7 +15,7 @@ func main() {
 
 	cwd, _ := os.Getwd()
 
-	logrus.Infof("serving on :8080, cwd: %s", cwd)
+	logrus.Infof("serving on http://localhost:8080, cwd: %s", cwd)
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		logrus.Fatal(err)
 	}
