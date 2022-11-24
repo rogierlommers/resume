@@ -20,6 +20,11 @@ jobs:
       - name: List files in ./bin directory
         run: |
           ls -lhr ./bin
+      
+      - uses: actions/upload-artifact@master
+        with:
+          name: compiled-binary
+          path: ./bin/resume
 
   build-and-push-image:
     runs-on: ubuntu-latest
