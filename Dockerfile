@@ -1,4 +1,4 @@
-FROM scratch
+FROM ubuntu
 LABEL description="Resume from Rogier Lommers"
 LABEL maintainer="Rogier Lommers <rogier@lommers.org>"
 
