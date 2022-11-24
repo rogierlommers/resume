@@ -17,15 +17,9 @@ jobs:
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/resume ./src/*.go
 
-      - name: List files
+      - name: List files in ./bin directory
         run: |
-          echo "---------------------------------------------------------------------------------"
-          pwd
-          echo "---------------------------------------------------------------------------------"
-          ls -lhr .
-          echo "---------------------------------------------------------------------------------"
-          ls -lhr /
-          echo "---------------------------------------------------------------------------------"
+          ls -lhr ./bin
 
   build-and-push-image:
     runs-on: ubuntu-latest
