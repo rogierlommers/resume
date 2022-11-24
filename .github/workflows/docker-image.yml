@@ -11,11 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      -
-        name: Build go binary
-        run: echo "starting compile"
-      -
-        name: List files
+      - name: Set up Go
+        uses: actions/setup-go@v3
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: List files
         run: |
           echo "---------------------------------------------------------------------------------"
           pwd
