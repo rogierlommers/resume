@@ -15,7 +15,9 @@ jobs:
         run: echo "starting compile"
       -
         name: List files
-        run: ls -lhr
+        run: |
+          pwd
+          ls -lhr
 
   build-and-push-image:
     runs-on: ubuntu-latest
