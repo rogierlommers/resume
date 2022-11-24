@@ -18,6 +18,9 @@ jobs:
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/resume ./src/*.go
 
+      - name: Make executable
+        run: chmod +x ./bin/resume
+
       - name: List files in ./bin directory
         run: |
           ls -lhr ./bin
