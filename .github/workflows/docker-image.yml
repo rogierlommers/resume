@@ -10,22 +10,10 @@ jobs:
   build-binary:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Pushing the freshly built image
-        run: |
-            echo "Inside group"
-
-  build-dockerfile:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag rogierlommers/resume:$(date +%s)
-
-  push-image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Pushing the freshly built image
-        run: |
-            echo "Inside group"
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: user/app:latest
+      -
