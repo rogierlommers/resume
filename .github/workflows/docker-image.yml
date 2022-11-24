@@ -15,10 +15,7 @@ jobs:
         uses: actions/setup-go@v3
 
       - name: Build
-        run: go build -v ./...
-
-      - name: Test
-        run: go test -v ./...
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/resume ./src/*.go
 
       - name: List files
         run: |
