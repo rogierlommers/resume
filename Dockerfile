@@ -10,7 +10,7 @@ COPY --chown=1000:1000 ./src/assets /assets
 EXPOSE 8080
 
 # make binary executable
-RUN chmod +x /resume/resume
+# RUN chmod +x /resume/resume
 
 # run binary
 CMD ["/resume/resume"]
