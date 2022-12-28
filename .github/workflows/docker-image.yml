@@ -77,7 +77,7 @@ jobs:
             User $SSH_USER
             IdentityFile ~/.ssh/services.key
             StrictHostKeyChecking no
-            Port 777
+            Port 8866
           END
         env:
           SSH_USER: ${{ secrets.SERVICES_SSH_USER }}
