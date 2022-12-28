@@ -75,20 +75,19 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/services.key
-          chmod 600 ~/.ssh/services.key
+          echo "$SSH_KEY" > ~/.ssh/ssh.key
+          chmod 600 ~/.ssh/ssh.key
           cat >>~/.ssh/config <<END
           Host services
             HostName $(tailscale ip -6 services)
             User $SSH_USER
-            IdentityFile ~/.ssh/services.key
+            IdentityFile ~/.ssh/ssh.key
             StrictHostKeyChecking no
             Port 22
           END
         env:
-          SSH_USER: ${{ secrets.SERVICES_SSH_USER }}
-          SSH_KEY: ${{ secrets.SERVICES_SSH_KEY }}
-          SSH_HOST: ${{ secrets.SERVICES_SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Run docker-compose commands
         run: ssh services 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
