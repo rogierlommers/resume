@@ -79,11 +79,11 @@ jobs:
           chmod 600 ~/.ssh/services.key
           cat >>~/.ssh/config <<END
           Host services
-            HostName $SSH_HOST
+            HostName $(tailscale ip -6 services)
             User $SSH_USER
             IdentityFile ~/.ssh/services.key
             StrictHostKeyChecking no
-            Port $SSH_PORT
+            Port 22
           END
         env:
           SSH_USER: ${{ secrets.SERVICES_SSH_USER }}
