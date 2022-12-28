@@ -68,10 +68,13 @@ jobs:
     steps:
 
       - name: Tailscale
-        uses: tailscale/github-action@v1
+        uses: tailscale/github-action@main
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           version: 1.34.1
+          # get keys here: https://login.tailscale.com/admin/settings/keys
+          # these will expire after 90 days
+          # be sure to enable reusable and ephemeral
 
       - name: Configure SSH
         run: |
