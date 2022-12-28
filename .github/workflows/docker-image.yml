@@ -78,10 +78,11 @@ jobs:
             StrictHostKeyChecking no
           END
         env:
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.SERVICES_SSH_USER }}
+          SSH_KEY: ${{ secrets.SERVICES_SSH_KEY }}
+          SSH_HOST: ${{ secrets.SERVICES_SSH_HOST }}
 
       - name: Stop the server
         run: ssh services 'ls -lrt'
+        
         #docker compose kill resume && docker system prune --all --force && docker compose up resume -d
