@@ -85,6 +85,4 @@ jobs:
           SSH_HOST: ${{ secrets.SERVICES_SSH_HOST }}
 
       - name: Stop the server
-        run: ssh services 'sudo apt update'
-
-        #docker compose kill resume && docker system prune --all --force && docker compose up resume -d
+        run: ssh services 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
