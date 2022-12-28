@@ -59,3 +59,29 @@ jobs:
           context: .
           push: true
           tags: rogierlommers/resume:latest
+
+  pull-and-run-latest:
+    name: "Pull latest image and run"
+    runs-on: ubuntu-latest
+    needs: build-and-push-image
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/services.key
+          chmod 600 ~/.ssh/services.key
+          cat >>~/.ssh/config <<END
+          Host services
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/services.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+
+      - name: Stop the server
+        run: ssh services 'ls -lrt'
+        #docker compose kill resume && docker system prune --all --force && docker compose up resume -d
