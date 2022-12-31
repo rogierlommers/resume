@@ -61,10 +61,10 @@ jobs:
           tags: rogierlommers/resume:latest
 
   pull-and-run-latest:
-    # inspiration: https://blog.benoitblanchon.fr/github-action-run-ssh-commands/
     name: "Pull latest image and run"
     runs-on: ubuntu-latest
     needs: build-and-push-image
+    # inspiration: https://blog.benoitblanchon.fr/github-action-run-ssh-commands/
     steps:
 
       - name: Tailscale
