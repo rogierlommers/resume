@@ -94,7 +94,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Run docker-compose commands
-        run: ssh vps-services 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
+        run: ssh vps 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
 
       - name: Run tailscale logouut
         run: sudo tailscale logout
