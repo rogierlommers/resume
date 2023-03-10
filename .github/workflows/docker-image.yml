@@ -82,8 +82,8 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/ssh.key
           chmod 600 ~/.ssh/ssh.key
           cat >>~/.ssh/config <<END
-          Host vps-services
-            HostName $(tailscale ip -6 vps-services)
+          Host vps
+            HostName $(tailscale ip -6 vps)
             User $SSH_USER
             IdentityFile ~/.ssh/ssh.key
             StrictHostKeyChecking no
