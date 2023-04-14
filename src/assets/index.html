@@ -1,272 +1,815 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!doctype html>
+<html class="no-js" lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <title>Rogier Lommers | resume</title>
-    <script type="text/javascript" src="https://platform.linkedin.com/badges/js/profile.js" async defer></script>
-    <script defer data-domain="rogier.lommers.org" src="https://plausible.playlist-exchange.com/js/script.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Rogier Lommers - Résumé</title>
+    <meta name="description"
+        content="Rogier Lommers: I am an experienced Principal Tech Lead working for bol.com. I develop and maintain backend systems with focus on high availability, performance, reliability and scalability.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        @import url(https://fonts.googleapis.com/css?family=Lato:400,700,900);
+
+        .Navbar ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0
+        }
+
+        html {
+            font-size: 62.5%;
+            box-sizing: border-box
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit
+        }
+
+        body {
+            margin: 0;
+            background-color: #fff
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #000000;
+        }
+
+        .u-cf:before,
+        .u-cf:after {
+            content: " ";
+            display: table
+        }
+
+        .u-cf:after {
+            clear: both
+        }
+
+        .u-hug {
+            margin-top: 0 !important
+        }
+
+        .u-pullRight {
+            float: right
+        }
+
+        .u-keyline {
+            position: relative
+        }
+
+        .u-keyline:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            border-top: 1px solid #ddd
+        }
+
+        .u-link {
+            text-decoration: none;
+            position: relative;
+            display: inline-block
+        }
+
+        .u-link:before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            bottom: .2em;
+            width: 100%;
+            height: 2px;
+            background-color: #96ddcf
+        }
+
+        .u-link:visited:before {
+            background-color: #ddd
+        }
+
+        .u-link:hover:before {
+            background-color: #fa8072
+        }
+
+        .u-shadow {
+            text-shadow: 4px 4px 0 #6fd1bd;
+            transition: text-shadow .2s ease-in-out
+        }
+
+        a:hover .u-shadow {
+            text-shadow: -4px -4px 0 salmon
+        }
+
+        @media (max-width:767px) {
+            .u-hidden\@sm-down {
+                display: none !important
+            }
+        }
+
+        @media (max-width:543px) {
+            .u-hidden\@xs-down {
+                display: none !important
+            }
+        }
+
+        body {
+            color: #333;
+            font-size: 1.6rem;
+            font-family: Lato, Helvetica, Arial, sans-serif;
+            font-weight: normal;
+            line-height: 1.5;
+            letter-spacing: .008em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #111;
+            line-height: 1.2;
+            font-weight: 900
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        ul,
+        p {
+            margin-top: 1.6rem;
+            margin-bottom: 0
+        }
+
+        h3,
+        .h3 {
+            font-size: 2rem;
+            margin-top: 3.2rem
+        }
+
+        a {
+            color: #333
+        }
+
+        ul {
+            padding-left: 1.8rem
+        }
+
+        .Title {
+            font-size: 50px;
+            font-size: 8vw;
+            font-family: Lato, 'Open Sans', Helvetica, Arial;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-top: 0;
+            margin-bottom: 0;
+            text-transform: uppercase;
+            display: inline-block
+        }
+
+        @media (max-width:525px) {
+            .Title {
+                font-size: 42px
+            }
+        }
+
+        @media (min-width:937.5px) {
+            .Title {
+                font-size: 75px
+            }
+        }
+
+        .Title-sub {
+            font-size: .34em;
+            letter-spacing: .16em;
+            font-weight: 400;
+            text-transform: none;
+            display: block;
+            margin-top: 1.2rem;
+            padding-top: 1.6rem;
+            border-top: .45em solid
+        }
+
+        .l-Wrapper {
+            width: 80%;
+            max-width: 90rem;
+            margin-left: auto;
+            margin-right: auto
+        }
+
+        @media (max-width:767px) {
+            .l-Wrapper--reset\@sm-down {
+                width: 100%
+            }
+        }
+
+        .l-Header {
+            margin-top: 6.4rem;
+            margin-bottom: 3.2rem
+        }
+
+        .l-Header-col {
+            margin-top: 3.2rem;
+            margin-bottom: 3.2rem
+        }
+
+        @media (min-width:544px) {
+            .l-Header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end
+            }
+
+            .l-Header-col:last-child:not(:first-child) {
+                text-align: right
+            }
+        }
+
+        .l-Section {
+            margin-top: 6.4rem
+        }
+
+        .l-Section+.l-Section {
+            position: relative;
+            border-top: 1px solid #ddd
+        }
+
+        .l-Section+.l-Section:before {
+            content: "";
+            font-size: 50px;
+            font-size: 8vw;
+            position: absolute;
+            top: -.1rem;
+            border-top: .153em solid;
+            width: 4rem
+        }
+
+        @media (max-width:525px) {
+            .l-Section+.l-Section:before {
+                font-size: 42px
+            }
+        }
+
+        @media (min-width:937.5px) {
+            .l-Section+.l-Section:before {
+                font-size: 75px
+            }
+        }
+
+        .l-Section-title,
+        .l-Section-content {
+            margin-top: 3.2rem
+        }
+
+        .l-Section-content>:first-child,
+        .l-Section-content>:first-child>h3 {
+            margin-top: 0
+        }
+
+        .l-Section-content>p:first-child,
+        .l-Section-content>ul:first-child {
+            margin-top: .3rem
+        }
+
+        .l-Section-group {
+            display: inline
+        }
+
+        @media (min-width:768px) {
+            .l-Section {
+                display: flex
+            }
+
+            .l-Section:before {
+                display: none
+            }
+
+            .l-Section-title {
+                flex: 0 0 24%
+            }
+        }
+
+        .l-Footer {
+            font-size: 1.4rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 12.8rem -.8rem 3.2rem;
+            padding-top: 3.2rem
+        }
+
+        .l-Footer a {
+            text-decoration: none;
+            display: inline-block
+        }
+
+        .l-Footer a:not(:last-child) {
+            margin-right: 1.6rem
+        }
+
+        .l-Footer a:hover {
+            color: #111
+        }
+
+        .l-Footer-col {
+            padding-left: .8rem;
+            padding-right: .8rem
+        }
+
+        .Navbar {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            line-height: 4rem;
+            letter-spacing: .28rem;
+            text-transform: uppercase;
+            width: 100%;
+            background-color: #111
+        }
+
+        .Navbar a:not(.Navbar-toggle) {
+            color: inherit;
+            text-decoration: none
+        }
+
+        .Navbar li {
+            display: inline-block
+        }
+
+        .Navbar a {
+            display: block;
+            padding: 0 .8rem
+        }
+
+        a.Navbar-btn {
+            padding-left: 2rem;
+            padding-right: 2rem;
+            background: #6fd1bd
+        }
+
+        a.Navbar-btn:hover {
+            background: #fa8072
+        }
+
+        @media (max-width:767px) {
+            .Navbar {
+                text-align: right
+            }
+
+            .Navbar ul:not(:first-child) {
+                display: inline-block;
+                padding-right: 1.6rem !important
+            }
+        }
+
+        .Tag {
+            color: #111;
+            text-shadow: 1px 1px 0 rgba(255, 255, 255, .4);
+            font-weight: 700;
+            line-height: 1;
+            position: relative;
+            display: inline-block;
+            padding-left: .8rem;
+            padding-right: .8rem
+        }
+
+        .Tag:before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1em;
+            bottom: 0;
+            margin: auto;
+            border-radius: .2rem;
+            background-color: rgba(111, 209, 189, .5);
+            transition: all .8s .4s ease-in-out
+        }
+
+        .Tag:hover:before {
+            transform: scale(1.05, 2.4);
+            background-color: #6fd1bd;
+            transition-delay: 0s;
+            transition-duration: .2s
+        }
+
+        @media print {
+            html {
+                font-size: 50%
+            }
+
+            .l-Wrapper {
+                width: 100%;
+                max-width: none
+            }
+
+            .Navbar,
+            .u-hidden\@print {
+                display: none
+            }
+
+            .l-Header,
+            .l-Header-col {
+                margin-top: 0
+            }
+
+            .l-Footer,
+            .l-Section {
+                margin-top: 3.2rem
+            }
+
+            h3,
+            .h3,
+            .l-Section-title,
+            .l-Section-content {
+                margin-top: 1.8rem
+            }
+
+            .Title {
+                font-size: 4.5rem
+            }
+
+            .l-Header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end
+            }
+
+            .l-Header-col:last-child:not(:first-child) {
+                text-align: right
+            }
+
+            .l-Section {
+                position: relative;
+                padding-top: 5px;
+                border-top: 1px solid #ddd
+            }
+
+            .l-Section:before {
+                display: none
+            }
+
+            .l-Section:after {
+                content: "";
+                position: absolute;
+                top: -1px;
+                left: 0;
+                border-top: 5px solid;
+                width: 4rem
+            }
+
+            .l-Section-group {
+                display: block;
+                /* page-break-inside: avoid */
+            }
+
+            .Tag {
+                font-weight: 900;
+                display: inline;
+                padding-left: 0;
+                padding-right: 0
+            }
+
+            *,
+            *:before,
+            *:after,
+            p:first-letter,
+            div:first-letter,
+            blockquote:first-letter,
+            li:first-letter,
+            p:first-line,
+            div:first-line,
+            blockquote:first-line,
+            li:first-line {
+                background: transparent !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                text-shadow: none !important
+            }
+
+            a,
+            a:visited {
+                text-decoration: underline
+            }
+
+            p,
+            h2,
+            h3,
+            li {
+                orphans: 3;
+                widows: 3
+            }
+
+            h2,
+            h3 {
+                page-break-after: avoid
+            }
+
+            .Contact:after {
+                content: "(206) 960-0961";
+                padding-left: 1.6rem
+            }
+        }
+
+        @page {
+            margin: 2.2cm 2.2cm 1.8cm
+        }
+    </style>
 </head>
 
 <body>
+    <nav class="Navbar">
+        <div class="l-Wrapper l-Wrapper--reset@sm-down">
+            <ul class="u-pullRight u-hidden@xs-down">
+                <li>
+                    <a class="Navbar-btn Navbar-btn--main" href="#">
+                        Download
+                        <span>(pdf)</span>
+                    </a>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <a href="https://www.linkedin.com/in/rogierlommers">LinkedIn</a>
+                </li>
+                <li>
+                    <a href="https://github.com/rogierlommers">GitHub</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-    <div id="page-wrap">
+    <article class="l-Wrapper">
 
-        <img src="rogier-lommers.png" alt="Photo of Rogier Lommers" id="pic" />
-        <div id="contact-info" class="vcard">
-            <h1 class="fn">Rogier Lommers</h1>
-            <p>
-                <a class="email" href="https://nl.linkedin.com/in/rogierlommers"><img
-                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAExUlEQVRYR72Xe1BUVRzHv3d32WVXXorg8lBI0zSSLMfGnCYaR0fLGc3UUkfKSHsMjiMjmoQkhQSJDAwjk6WZha9SIzOKxobJHuTklCJijgry3F1WVhHYhV2WPc25J26cvdvuP9fOzJ2539/3d36/zz3n3r17BYwYKw/+8J4HnlTBg/iRcaXOiQrtKqgqjq2d99ZwTWH4ZPm+6suCICRNiI5EdNgoaDUqpfqKdVxuD6w9drRabSCENJxYv/AhGhcBlu6rKhCIsO3RyQm46/Sgy+GCa8ijKIBWrcJYgxbhOhX+vN4CIpDCyvWLskSAxeWn2hKN0fF9CIJjcEjRxt7FDEFqhGAQzRZr+9fpS8aLAIvKKklCfBxuDfDNHbZOdLdcF2tEJEyGIXKcInBRwWq0tHegauNSQQRYWHKCjDbGwenml32ivRWvpMwQm3589iKaRk1QBECnUeGOpQPVGcsZwPyiL4ghKkZWvGgOf8VbajsVAaBFHLfMOLPleQYwt/AoMUTFyoqXpsRxsU1nOxQEMKFm2yoGkJJ/iBii+WY0PjsmBKkPRopNK67YcM7cpxyAtQNns9cwgCfe/cwngGLdfBRyWDvwy9svMoDHd3xCDNHyH7+u+nPc1LHTZ4t60N6Du01XJI+uXlBIOBydbRi090pxbdhoGMaNhybYIENwWNvx2zsvM4DHtu8nNNF7HFk2nQutPlkv6gfCNdgxb5rkHf61HhdvtCA1ZSaSE/+9mWuvNuPwz3XoComDWqvjalHY33euYwAzsz7yCXB85SPcpBXHLog6cbQeRQumSl6jxYZJRnaveI++ASc2VNTAHmqUAfxR8CoDmLH1A2IYJ3/Gv0qdxU16tuK8pL09f/dL9YVr2Hv5rhdAKy7ueoMBJGeWE70PgG/T5nCTnjlQK2lvr6mrF3k110Q/Z+4UTBwbKuVa7vQirZJt3/Do72zFpd3pDCBpUxnRGxNkF3HmtSe52PwPf5K0t5d5+hLqTN2in2wMRfESfvtGzqU5/ZYWNJRuZABTN5YQvTFRBvBj+lwu9lR5jaT9eSE6Db5Zx8OPnMsAmnG1LIMBTEkvJsE+AGozFnAAc0q+l7Q/jyYF8gcszbhWvpkBTHq9yCfA+a2LOIBZu6ok7c+jSYF8CtC4dwsDSFxXQIJj7pNtQd32pVzs4Z2Vkvbn0aRA/oD5Jpr3ZzGA8Wn5ROcD4K/cFRzAtNzjkvbn0aRAvtN8E20HshlA7No8ojPKV+BG/ioO4P7so5L259GkQL7TchOmgzkMwLgml2hjJsq2oGVXKhdL2FohaX8eTQrku8xNsBzKZQBRq3OINmaSDKB990tcLD7zU0n782hSIN9lbsStI3kMIPKFbBLkA0BGpGBg0NwI2+f5DCBiRRbRjImFoNUr2OK/SxFXP9y3Teg+XsAAwpZtM+nCxsQMGSL+FwC1oxvOntvmnpOFsSJAyHNvloBgkyoyFoKGf28rTUTcTnhsJvpJVNr35fsZFIAeGv3izQ2AMFk1KgLQ6hXfDrrscPXDY+8GCLnef7o4CYCbNg8CQN+dQbqnN+RBrVkCQqKVvnKxniBYMeQ+5fxuTw79ZweglwMY/la8J835omQkgLgF/zSXvpbvMQQFoIf7bwzkyDzZZ081AAAAAElFTkSuQmCC" /></a>
-                <a class="email" href="https://twitter.com/rogierlommers"><img
-                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACnElEQVRYR+2XSWhTURSG/zflJa0ZrImKA8QWh6goKFQQsahY0S4stXXhzkVBEEFwIbhx3omoG0u3ioqpulAQcSFUUaiKSmoNakFUGjOQ1GZ4Sd5w5SodSPOGRIgucjdvkTN85z8DhOkOproIo/axYH2o4VMZNcETvpfZN5CI1Tr5ZJ0atDjTM5AkNSx8Vqo6QF2B/1sBB89AUsyXZP0CAT0BO5rn8iiqBK8jMm4MS0hKGlb7eCQlgkhGLbtsugpwLHBxpxsXXmTwbaK8M424ZakNR1obwZSETxcIFEIwltZw7lkaqlZ+2XUBFjk5XGp3IVskuPIyizc/5FkRBBbo6/DAaStN/8eUqvE2qiAUk/FotFCZAh47i/4O95TT4Ncibo9IiGWnS1nexOP8NqfhHbsXzuPme0nXxnAIT7c5EfDyU84aAd5FZbyKyPicVNDkYHF88xzd4FS9g/fHDQF1ARoFBn4Ph6ObGuEW2aqudTyn4fDDn9UB0Oqu7nGjoBDY+fI9NqOivT/7NFMdAPU6udWJNb7pFpglLP09+CGP4Ih+/6m94Qz4GlicanOCfqt5xx5PGK6wKQA1WOXl0R2wY918oSKG4biCM4NpUx/TU7zdL+LQxgbTQDMNCAFOPEljNKWY+pkC0AgH1jqwd4UdjMVZvBvO45bB7s+ksgRAHehl3N0iYleLaFjV8+9FXB7Kgqpg5VkCWOLisMNvQ3uzCIHTl+HBpzyuhyTQg2X16QLQ9etcaccyDw+XaKz9l3EV10I5hGLmPS8FM1RA5Bi0LhawYaHw+yrOc7DgWAY5mSCaUfExqWBoTEY4UXniSRBLLbAqZzV2dYC6Av9ega478ThHOG81E/zXPhqJMfsHUp0q1P6a/0PWSAwc2/sLoUUlYgoPW8IAAAAASUVORK5CYII=" /></a>
-                <a class="email" href="https://github.com/rogierlommers"><img
-                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEzklEQVRYR62XTWxUVRTH/+e8aaXUlhbex0wloZCiAYJIYoLEHYYQgwtCosEPFigk7owaP0KIkWj8DIkLF4rAwqDGhSEkYkITjcaIARaAKLIotsbamffemIIlFaZzzzF30qmv09fpYOeuJnPPx++ce+655xEaXK7rdjiO8xCLbCoD6whYwUSdVl1ErinRYAa4IMxfG2NOFIvFsUZM01xCd7juncZxXhZjdjBz21zyk0DjDtFnZeCtOI4H6unMCrB06dK2cqn0GoBnAGQacZwiMwHgvQULF74yNDR0I81GKoDneSsd1WNgXvM/HU9XE/lJmLdHUXSl1t4MgB7PW19WPcnMXlOcV42IRA7Rlj/j+HzS7jQAe94TwA/M7DbVeQLCEN2frIspgJ6enoVSKp1Jpp2AC6p6WVQ33XJGREJi/kZF1oD57qmAjLmYaWvbMDw8/I/9bwog6/sHADxXk57t+Sg6BqAl8LydRPQ6gJwSjarqIANXK1UPdBHRclLtFmCYVfcV4vgTAOWs5z0Cos9rMvpuIYpenALocd27hPnn2mo3qiuT6Vq8eHFnJpPx0orJGguCYIUxJk72gFwut0qNuVQDMGFUV1vblQxkg+AIVHfVnrsAfbM5a7RGJoO7PKP6VQ/n43g3VaJiLqQ1GSXaFobh8UadpcnlfH+7Al/MCE5kXIkCCoLgMVK15zVticjvE8asGx0dvTYfgO7u7kUtjnOBmZfV2lGiHZTzvENK9FRKg9iZj6Kj83Fe1c35/k4FPp4BABy0GThLqvcmNwUotba2dlWvynwhbFsvlUpXGWitSfNp8j2vyERLkhtG9dc4jlfP13FS3/O8Sw7RqmmBisSU9f2SvefJDQXOh1G0vpkAge+fI+Ce2kxbAPtiTX/tRAYLxeKKZgL4rjuUUogT5LtunNL7y5zJLBoZGRlvBkSlzZfLfwNwZhxBWhFWhFS3FuL4q2YAZF13K5i/TLF1xl7Dj5Rod8oV6Q+jaEszAHKe169Em2fYEvnAXsNHSfXTNEcWLAzDw/OByAXBHlU9mGpD9eG6rRiAAbC3EEX2pbS/b2Vlsp73PIjeAMApiteNaq76GB2G6pOTQq9C9RJU9yXe8StKdISN6W/v6ro4MDBwM40kCIJ2AGtJdTNEdoF5+WzECnwYRtHTFYDKDEj0y2Q/sCP2EyLyrSNyCo6zNmmERI7ni8VtKYbJ9/0TDDw4V5pspyWiVWEY/pYcSN4B8IJVFpFxcpy1qtrBwHcAFlWNKtF9YRieTnPi+/5GBk7NBUBEb+bDcK+VmwLo7e1dcGNs7Ew1YlI9lI/jPdlstleN2U2qS8hxzuXD8IiddNKcVGyMj1dGrdmWHfPaOzs3VI9x2lBqJxoy5kcw+wAmSPWBfBx/P1dEyf2s72sd+QKYNxYKhaGqzIyx3Pf9dSzSbyFE5CYzvw/mE44xo0IU5KPoZD2gOgAF2wvCMLSj39RK/TCZzIT9MPlvmp1UKURR3c+5NIDKdM28LRn5rBmobvT19d12fWxsv6g+m3zHbwXAVrtDdKC9o2P/bFd3zo9Tmw2ovkQijwtAUbFo7/qsy3fdcQZEmY+C6O0wDAfnKMrGSszzvNtbWlq6R0ZG/qinkcvllpXL5b/iOL7eiOV/AczDFZjzhru9AAAAAElFTkSuQmCC" /></a>
-            </p>
+        <div class="l-Header">
+            <div class="l-Header-col">
+                <a href="https://rogier.lommers.org">
+                    <h1 class="Title">
+                        <span class="u-shadow">
+                            Rogier
+                            <br> Lommers
+                        </span>
+                        <span class="Title-sub">Principal Tech Lead @ bol.com</span>
+                    </h1>
+                </a>
+            </div>
+            <div class="l-Header-col Contact">
+                <!-- <div>contact me:</div> -->
+                <img border="1" src="rogier-lommers.jpg" />
+            </div>
         </div>
 
-        <div id="objective">
-            <p>
-                I am an experienced Principal Tech Lead working for <a href="https://www.bol.com">bol.com</a>. I
-                develop and maintain backend systems with focus on high availability, performance, reliability and
-                scalability.
-            </p>
+        <section class="l-Section">
+            <h2 class="l-Section-title h3 u-hidden@sm-down">Profile</h2>
+            <div class="l-Section-content">
+                <p>I am an experienced Principal Tech Lead working for bol.com. I develop and maintain backend systems
+                    with focus on high availability, performance, reliability and scalability. I have 15+ years of
+                    experience in in working with multidiciplinairy teams on big projects.</p>
+            </div>
+        </section>
+
+        <section class="l-Section">
+            <h2 class="l-Section-title h3 u-hidden@sm-down">Experience</h2>
+            <div class="l-Section-content">
+
+                <div class="l-Section-group">
+                    <h3>bol.com: Principal Tech Lead</h3>
+                    2023 - Present
+                    <p>Responsible for leading the process to create and keep an environment where people become
+                        empowered. anticipate dependencies, figure out unknowns, plan before, plan on the go, and
+                        revisit afterward. By understanding business risks and requirements and accurately translating
+                        them into solutions and projects, I help the buying domain at bol.com to move forward. My goal
+                        is to have holistic knowledge of the products within my domain: their design and relationships
+                        with each other and the company's overall architecture. It's also equally important to help the
+                        team evolve their products over time in a maintainable, scalable way.</p>
+                    <br> Highlights:
+                    <ul>
+                        <li>Company-wide implementation of <strong class="Tag">distributed tracing</strong>.</li>
+                        <li>Leading project "future of testing", where we <strong class="Tag">re-design our testing
+                                strategy in the cloud</strong>.</li>
+                    </ul>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>bol.com: Space Tech Lead</h3>
+                    2020 - 2023
+                    <p>As a space tech lead, my focus is on the bol.com wide technical initiatives. I am responsible for
+                        leading and helping the product tech leads with the implementation of these initiatives. I am
+                        working on defining new horizontal (technical) initiatives across the whole organization.</p>
+                    <br> Highlights:
+                    <ul>
+                        <li>Part of the project team who is responsible to have an overall <strong class="Tag">tech
+                                vision</strong> that helps teams
+                            and domains to establish direction. More info: <a class="u-link"
+                                href="https://techlab.bol.com/en/blog/tech-vision-at-bol-com/">tech-vision at
+                                bol.com</a>.</li>
+                        <li>Helping the product tech leads with the development and implementation of horizontal topics
+                            like SRE (<strong class="Tag">site reliability engineering</strong>), <strong
+                                class="Tag">API-developments</strong> etc.</li>
+                        <li><strong class="Tag">Coaching</strong> the product tech leads in their role.</li>
+                        <li>Play an active role in the tech lead community and as such a connecting role between spaces
+                        </li>
+                        <li>Together with the community I spot, define and help to start the next <strong
+                                class="Tag">horizontal initiatives</strong>
+                            that will help bol.com grow.</li>
+                        <li>I <strong class="Tag">advise</strong> and support the space MT on technical/engineering
+                            challenges.</li>
+                    </ul>
+                    <br> Presentations / podcast appearances:
+                    <ul>
+                        <li>2022 | Club Cloud - bol.com moving 100+ teams and it's 1K+ applications to the cloud / 3
+                            unforeseen challenges (<a class="u-link"
+                                href="https://www.youtube.com/watch?app=desktop&v=wmGZM5e48Ss&feature=emb_logo">link</a>).
+                        </li>
+                        <li>2021 | Beyond Coding: moving from an on-premise solution to the cloud might be the biggest
+                            change an organization can go through, with regards to their tech landscape: <a
+                                class="u-link"
+                                href="https://www.linkedin.com/posts/beyond-coding-podcast_helping-each-other-move-to-the-cloud-at-bolcom-activity-6856557357544075264-AZEv/">link</a>
+                            (direct
+                            youtube <a class="u-link" href="https://www.youtube.com/watch?v=SpXC1gkz8-o">link</a>).</li>
+                        <li>2021 | Techlab: a discussion about how to maximise the benefits of the cloud by using the
+                            horizontal pod autoscaler: <a class="u-link"
+                                href="https://techlab.bol.com/en/podcasts/techlab/maximize-cloud-benefits-podcast/">Maximize
+                                cloud benefits</a>.</li>
+                        <li>2020 | CodeKlets podcast: <a class="u-link"
+                                href="https://podcasts.apple.com/nl/podcast/rogier-lommers-en-kevin-van-den-broek-over-werken-bij-bol-com/id1478629613?i=1000502402919&l=en">Rogier
+                                Lommers en Kevin van den Broek over werken bij Bol.com</a>.</li>
+                    </ul>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>bol.com: Software Architect</h3>
+                    2015 - 2020
+                    <p>Software architect / cloud liaison. Helping multidisciplinary teams to get most out of the cloud
+                        (Google Cloud Platform). Keywords are <strong class="Tag">application development</strong>,
+                        migration from own datacenter to
+                        <strong class="Tag">GCP</strong>, <strong class="Tag">horizontal scalability</strong>,
+                        cloud-component selection, <strong class="Tag">kubernetes</strong>, educating the <strong
+                            class="Tag">Go language</strong>,
+                        etc.
+                    </p>
+                    <br> Highlights:
+                    <ul>
+                        <li><strong class="Tag">Lead of assets team</strong>. We are responsible for the complete flow
+                            of assets, from sourcing (external) to publishing. This includes image deduplication based
+                            on perceptual hashing, automated scoring, matching and high-volume rendering (both
+                            java/spring and Golang services).</li>
+                        <li><strong class="Tag">Technical design</strong> and <strong
+                                class="Tag">implementation</strong> of several micro services (image renderer, fetcher).
+                            This includes storage selection (both Google Cloud platform and own datacenter),
+                            provisioning, metrics, logging, etc.</li>
+                        <li>Hadoop-dumper project: an easy way to dump data from Golang applications to a hadoop
+                            cluster.</li>
+                        <li>Creator of Miracle: <strong class="Tag">distributed processing</strong> by colleagues.
+                            Thinking <strong class="Tag">out-of-the-box</strong>, what to do when you need a lot of
+                            hardware for a short period? Making use of your colleages laptops. More info: <a
+                                class="u-link"
+                                href="https://techlab.bol.com/en/blog/from-a-crazy-hackathon-idea-to-an-empty-queue/">techlab</a>.
+                        </li>
+                    </ul>
+                    <br> Presentations / podcast appearances:
+                    <ul>
+                        <li>A story about distributed computing before the cloud arrived (<a class="u-link"
+                                href="https://www.youtube.com/watch?v=dBKy6_z_qdo">Godays 2020,
+                                Berlin</a>).</li>
+                        <li>How we moved our asset pipeline to the cloud (<a class="u-link"
+                                href="https://www.meetup.com/nmgntech/events/264028871">NMGN.tech</a>).</li>
+                        <li>Techlab: <a class="u-link"
+                                href="https://techlab.bol.com/en/podcasts/techlab/redesign-for-the-cloud-horizontal-scaling/">Redesign
+                                for the cloud</a>, corresponding presentation: <a class="u-link"
+                                href="https://www.youtube.com/watch?v=UwxQm1rMFeg">Re-design for the cloud: a real life
+                                example of horizontal scaling</a> (for the bol.com spaces summit 2019).</li>
+                        <li>Podcast: <a class="u-link"
+                                href="https://techlab.bol.com/en/podcasts/techlab/podcast-go/">from zero to Go</a>.</li>
+                    </ul>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>bol.com: Software Engineer / developer</h3>
+                    2011 - 2015
+                    <p>Software Engineer working on a variety of projects.
+                    </p>
+                    <br> Highlights:
+                    <ul>
+                        <li>Connect supplier catalog files using Talend Data Integration and BigData edition.
+                            Responsible for the migration to a fully open-sourced license model. Setting up <strong
+                                class="Tag">continuous integration</strong>, automated builds, etc.</li>
+                        <li>Writing services for <strong class="Tag">digital asset management</strong>, using <strong
+                                class="Tag">Oracle AQ</strong>, <strong class="Tag">java</strong>, <strong
+                                class="Tag">spring</strong>, <strong class="Tag">maven</strong> and <strong
+                                class="Tag">REST</strong>.</li>
+                        <li>Content Improvement: using scalability of <strong class="Tag">Apache Hadoop</strong> to
+                            optimize product enrichment (map/reduce, pig and hive).</li>
+                    </ul>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>Ordina: Integration consultant</h3>
+                    2008 - 2010
+                    <p>Worked as an integration consultant on both internal and external projects.
+                    </p>
+                    <br> Highlights:
+                    <ul>
+                        <li>Philips: worked in a software development team with a primary focus to develop software for
+                            measuring NPS scores (2008-2010).</li>
+                        <li>bol.com: orked as a business analist in translation functional needs to technical designs.
+                            We developed a generic framework which is used for daily content deliveries (2010-2011).
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>BI4U: Writing Master Thesis</h3>
+                    2007-2008
+                    <p>"<i>A scientific approach to Operational Management</i>". Improving business processes by using
+                        data
+                        mining techniques. Supervisor: prof.dr.ir. Th.P. (Theo) van der Weide.
+                    </p>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>Edisoft Portugal: Internship</h3>
+                    2003
+                    <p>As part of my Bachelor degree I worked as an intern at Edisoft (a company in Lisbon) with two
+                        other students. We developed a tool which enabled offline usage of content out of an
+                        Oracle database, including the sync-back mechanism. Used stack: <strong class="Tag">Oracle
+                            pl/sql</strong>, <strong class="Tag">PHP</strong>, <strong class="Tag">XML</strong>.</p>
+                </div>
+
+
+                <!-- ---------------- -->
+
+
+
+            </div> <!-- --------------------------------------------------------------------------- -->
+        </section>
+
+        <section class="l-Section">
+            <h2 class="l-Section-title h3">Side projects</h2>
+
+            <div class="l-Section-content">
+                <div class="l-Section-group">
+                    <h3>Co-founder of playlist-exchange.com</h3>
+                    2022 - Present
+                    <p>You're on Spotify, but your friend is on Apple Music? Playlist Exchange helps you share your
+                        playlists and songs, independent of the music service you or your friends use. More information
+                        available at <a class="u-link"
+                            href="https://playlist-exchange.com/">https://playlist-exchange.com/</a>.</p>
+                </div>
+
+                <div class="l-Section-group">
+                    <h3>Creator of open-source (Golang) logrus package</h3>
+                    2018
+                    <p>Creator of open-source project which contains a hook for the Golang logrus package. This enables
+                        logging to a RELK stack (Redis, Elasticsearch, Logstash and Kibana). More information about this
+                        project can be found on github: <a class="u-link"
+                            href="https://github.com/rogierlommers/logrus-redis-hook">github.com/rogierlommers/logrus-redis-hook</a>.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="l-Section">
+            <h2 class="l-Section-title h3">Education</h2>
+            <div class="l-Section-content">
+                <h3>MSc | Information Science</h3>
+                <a class="u-link" href="https://www.ru.nl/icis/">Radboud University Nijmegen</a>
+                <br> 2003 - 2007
+                <p>Keywords: master, architecture, modelling, datastructures.</p>
+                <br />Activities and societies:
+                <ul>
+                    <li>Participated in a student exchange project with students from Uganda (University of Kampala).
+                    </li>
+                    <li>Master thesis: A scientic approach to operational management; a case study with the purpose to
+                        be able to reason about an organization with the aim of improving the business processes by
+                        using data mining techniques.</li>
+                    <li>Several activities at <a class="u-link" href="https://thalia.nu/">Thalia</a></li>
+                </ul>
+            </div>
+        </section>
+
+    </article>
+
+    <div class="l-Wrapper u-keyline">
+        <div class="l-Footer">
+            <div class="l-Footer-col">
+                <strong class="Tag">Rogier Lommers</strong>
+            </div>
+            <div class="l-Footer-col Contact">
+                <a class="u-link" href="https://rogier.lommers.org"><strong class="Tag">rogier.lommers.org</strong></a>
+            </div>
         </div>
-
-        <div class="clear"></div>
-
-        <dl>
-            <dd class="clear"></dd>
-
-            <dt>Experience</dt>
-            <dd>
-
-                <h2>bol.com<span>2023-current: Principal Tech Lead</span></h2>
-                <hr />
-                Responsible for leading the process to create and keep an environment where people become empowered.
-                anticipate dependencies, figure out unknowns, plan before, plan on the go, and revisit afterward.
-                By understanding business risks and requirements and accurately translating them into solutions and
-                projects, I help the buying domain at bol.com to move forward. My goal is to have holistic knowledge of
-                the products within my domain: their design and relationships with each other and the company's overall
-                architecture. It's also equally important to help the team evolve their products over time in a
-                maintainable, scalable way.
-
-                <br /><br />Highlights:
-                <ul>
-                    <li>Company-wide implementation of distributed tracing</li>
-                    <li>Leading project "future of testing", where we re-design our testing strategy in the cloud</li>
-                </ul>
-
-                <h2>bol.com<span>2020-2023: Space tech lead / Software architect</span></h2>
-                <hr />
-                As a space tech lead, my focus is on the bol.com wide technical initiatives. I am responsible for
-                leading and helping the product tech leads with the implementation of these initiatives. I am
-                working on defining new horizontal (technical) initiatives across the whole organization.
-
-                <br /><br />Highlights:
-                <ul>
-                    <li>Part of the project team who is responsible to have an overall tech vision that helps teams and
-                        domains to establish direction. More info: <a
-                            href="https://techlab.bol.com/en/blog/tech-vision-at-bol-com">tech-vision at
-                            bol.com</a></li>
-                    <li>Helping the product tech leads with the development and implementation of horizontal topics
-                        like SRE (site reliability engineering), API-developments etc.</li>
-                    <li>Coaching the product tech leads in their role</li>
-                    <li>Play an active role in the tech lead community and as such a connecting role between spaces
-                    </li>
-                    <li>Together with the community I spot, define and help to start the next horizontal initiatives
-                        that will help bol.com grow</li>
-                    <li>I advise and support the space MT on technical/engineering challenges</li>
-                </ul>
-
-                Presentations / podcast appearances:
-                <ul>
-                    <li>2022 | Club Cloud - bol.com moving 100+ teams and it's 1K+ applications to the cloud / 3
-                        unforeseen challenges <a
-                            href="https://www.youtube.com/watch?app=desktop&v=wmGZM5e48Ss&feature=emb_logo">link</a>
-                    </li>
-                    <li>2021 | Beyond Coding: moving from an on-premise solution to the cloud might be the biggest
-                        change an organization can go through, with regards to their tech landscape: <a
-                            href="https://www.linkedin.com/posts/beyond-coding-podcast_helping-each-other-move-to-the-cloud-at-bolcom-activity-6856557357544075264-AZEv">link</a>
-                        (direct youtube <a href="https://www.youtube.com/watch?v=SpXC1gkz8-o">link</a>)</li>
-                    <li>2021 | Techlab: a discussion about how to maximise the benefits of the cloud by using the
-                        horizontal pod autoscaler: <a
-                            href="https://techlab.bol.com/maximize-cloud-benefits-podcast/">Maximize
-                            cloud benefits</a></li>
-                    <li>2020 | CodeKlets podcast: <a
-                            href="https://podcasts.apple.com/nl/podcast/rogier-lommers-en-kevin-van-den-broek-over-werken-bij-bol-com/id1478629613?i=1000502402919&l=en">Rogier
-                            Lommers en Kevin van den Broek over werken bij Bol.com</a></li>
-                </ul>
-
-                <h2>bol.com<span>Software architect 2015-2020</span></h2>
-                <hr />
-
-                Software architect / cloud liaison. Helping multidisciplinary teams to get most out of the
-                cloud
-                (Google Cloud Platform). Keywords are application development, migration from own datacenter
-                to
-                GCP, (horizontal) autoscaling, cloud-component selection, kubernetes, educating the Go
-                language,
-                etc.<br /><br />Presentations / podcast appearances:
-                <ul>
-                    <li>Presentation: A story about distributed computing before the cloud arrived (<a
-                            href="https://www.youtube.com/watch?v=dBKy6_z_qdo">Godays 2020, Berlin</a>)</li>
-                    <li>Presentation: how we moved our asset pipeline to the cloud (<a
-                            href="https://www.meetup.com/NMGNtech/events/264028871/?_xtd=gqFyqTE2MTY2NjQwMqFwpmlwaG9uZQ&from=ref">NMGN.tech</a>)
-                    </li>
-                    <li>Techlab: <a href="https://techlab.bol.com/redesign-for-the-cloud-horizontal-scaling/">Redesign
-                            for the cloud</a>, corresponding presentation: <a
-                            href="https://www.youtube.com/watch?v=UwxQm1rMFeg">Re-design for the cloud: a
-                            real life example of horizontal scaling</a> (for the bol.com spaces summit
-                        2019).
-                    </li>
-                    <li>Podcast: <a href="https://techlab.bol.com/podcast-go/">From zero to Go</a></li>
-                </ul>
-
-                Highlights:
-                <ul>
-                    <li>Lead of <i>assets team</i>. We are responsible for the complete flow of assets, from
-                        sourcing
-                        (external) to publishing. This includes image deduplication based on perceptual hashing,
-                        automated scoring, matching and high-volume rendering (both java/spring and Golang
-                        services).
-                    </li>
-                    <li>Technical design and implementation of several micro services (image renderer, fetcher).
-                        This
-                        includes storage selection (both Google Cloud platform and own datacenter), provisioning,
-                        metrics, logging, etc.</li>
-                    <li>Hadoop-dumper project: an easy way to dump data from Golang applications to a hadoop
-                        cluster.
-                    </li>
-                    <li>Creator of Miracle: distributed processing by colleagues. Thinking out-of-the-box, what to
-                        do
-                        when you
-                        need a lot of hardware for a short period? Making use of your colleages laptops. More info:
-                        <a href="https://techlab.bol.com/from-a-crazy-hackathon-idea-to-an-empty-queue/">techlab</a>.
-                    </li>
-                </ul>
-
-                <h2>bol.com<span>2011-2015: Software engineer</span></h2>
-                <hr />
-                Software Engineer working on a variety of projects:
-                <ul>
-                    <li>Connect supplier catalog files using Talend Data Integration and BigData edition.
-                        Responsible for the migration to a fully open-sourced license model. Setting up
-                        continuous
-                        integration, automated builds, etc.</li>
-                    <li>Writing services for digital asset management, using Oracle AQ, java, spring, maven and
-                        REST.</li>
-                    <li>Content Improvement: using scalability of Apache Hadoop to optimize product enrichment
-                        (map/reduce, pig and hive).</li>
-                </ul>
-
-
-
-                <h2>Ordina<span>2008-2010: Integration consultant</span></h2>
-                <hr />
-                Worked as an integration consultant on both internal and external projects.
-                <ul>
-                    <li>(2008-2010) Philips: worked in a software development team with a primary focus to
-                        develop
-                        software for measuring NPS scores. Used stack</li>
-                    <li>(2010-2011) bol.com: worked as a business analist in translation functional needs to
-                        technical designs. We developed a generic framework which is used for daily content
-                        deliveries.
-                    </li>
-                </ul>
-
-                <h2>BI4U<span>2007-2008: Writing master thesis</span></h2>
-                <hr />
-                "A scientific approach to Operational Management". Improving business processes by using data
-                mining
-                techniques. Supervisor: prof.dr.ir. Th.P. (Theo) van der Wide.
-                <br /><br />
-
-                <h2>Edisoft<span>2003: Internship</span></h2>
-                <hr />
-                As part of my Bachelor degree I worked as an intern at Edisoft (a company in Lisbon) with two
-                other
-                students. Together, we
-                developed a tool which enabled offline usage of content out of an Oracle database, including the
-                sync-back mechanism. Used stack:
-
-                <ul>
-                    <li>Oracle pl/sql</li>
-                    <li>PHP</li>
-                    <li>XML</li>
-                </ul>
-                </p>
-
-
-                <h2>VéBé<span>2002-2004: Webdeveloper</span></h2>
-                <hr />
-                Technical design and implementation of a content management system, written in PHP/mysql. I was
-                responsible for development, maintenance, documentation and innovation of the CMS. I also gave a
-                couple of workshops to a group of customers. Used stack:
-                <ul>
-                    <li>PHP</li>
-                    <li>MySQL</li>
-                </ul>
-                </p>
-
-                <h2>RCS<span>1999-2002: Technical employer</span></h2>
-                <hr />
-                I worked as a technical employer in assembling hardware, problem solving, customer contacts and
-                sales. During that period, I developed an intranet application to support the daily business
-                (optimised provisioning of new systems, collecting drivers, etc).
-
-
-            </dd>
-
-            <dd class="clear"></dd>
-
-            <dt>Side projects</dt>
-            <dd>
-                <h2>😁 Level-4-loadbalancer 😁 @ playlist-exchange.com<span>2022</span></h2>
-                <p>You're on Spotify, but your friend is on Apple Music? Playlist Exchange helps you share your
-                    playlists and songs, independent of the music service you or your friends use.
-                    (<a href="https://playlist-exchange.com/">https://playlist-exchange.com/</a>).
-                </p>
-
-                <h2>Creator of open-source (Golang) logrus package<span>2018</span></h2>
-                <p>Creator of open-source project which contains a hook for the Golang logrus package. This
-                    enables logging to a RELK stack (Redis, Elasticsearch, Logstash and Kibana).
-                    (<a
-                        href="https://github.com/rogierlommers/logrus-redis-hook">https://github.com/rogierlommers/logrus-redis-hook</a>).
-                </p>
-            </dd>
-
-            <dd class="clear"></dd>
-
-
-            <dt>Education</dt>
-            <dd>
-                <h2>Information Science @ Radboud University Nijmegen<span>2003-2007</span></h2>
-                <p>Keywords: master, architecture, modelling, datastructures. Activities and societies:
-                <ul>
-                    <li>Participated in a student exchange project with students from Uganda (University of
-                        Kampala)</li>
-                    <li>Master thesis: A scientic approach to operational management; a case study with the purpose
-                        to be able to reason about an organization with the aim of improving the business processes
-                        by using data mining techniques</li>
-                    <li>Several activities @ <a href="https://thalia.nu/">Thalia</a></li>
-                </ul>
-                </p>
-
-                <h2>Informatics @ Saxion Deventer<span>2001-2003</span></h2>
-                <p>Keywords: bachelor, architecture, modelling, data structures. Activities and societies: Hannover
-                    project.</p>
-            </dd>
-
-            <dd class="clear"></dd>
-
-
-        </dl>
-
-        <div class="clear"></div>
-
     </div>
 
 </body>
