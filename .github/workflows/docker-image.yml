@@ -82,8 +82,8 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/ssh.key
           chmod 600 ~/.ssh/ssh.key
           cat >>~/.ssh/config <<END
-          Host vps
-            HostName $(tailscale ip -6 vps)
+          Host services
+            HostName $(tailscale ip -6 services)
             User $SSH_USER
             IdentityFile ~/.ssh/ssh.key
             StrictHostKeyChecking no
@@ -94,7 +94,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Run docker-compose commands
-        run: ssh vps 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
+        run: ssh services 'cd /srv/local/services && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
 
       - name: Run tailscale logouut
         run: sudo tailscale logout
