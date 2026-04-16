@@ -22,7 +22,7 @@ jobs:
         run: |
           ls -lhr ./bin
       
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: compiled-binary
           path: ./bin/resume
@@ -33,10 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v4
         with:
           name: compiled-binary
-          path: ./bin/resume
+          path: ./bin
 
       - name: List files in ./bin directory
         run: |
@@ -93,7 +93,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
 
       - name: Run docker-compose commands
-        run: ssh services 'cd /srv/local && docker compose kill resume && docker system prune --all --force && docker compose up resume -d'
+        run: ssh services 'cd /srv/local && docker compose pull resume && docker compose up -d resume'
 
-      - name: Run tailscale logouut
+      - name: Run tailscale logout
         run: sudo tailscale logout
