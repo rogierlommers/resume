@@ -10,15 +10,7 @@ import (
 )
 
 func main() {
-	router := mux.NewRouter()
-	router.Use(loggingMiddleware)
-	router.PathPrefix("/").Handler(http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !isValidPath(r.URL.Path) {
-			http.NotFound(w, r)
-			return
-		}
-		http.FileServer(http.Dir("assets")).ServeHTTP(w, r)
-	})))
+	router := newRouter(http.Dir("assets"))
 
 	cwd, _ := os.Getwd()
 
@@ -31,10 +23,34 @@ func main() {
 	}
 }
 
+func newRouter(assets http.FileSystem) http.Handler {
+	router := mux.NewRouter()
+	router.Use(loggingMiddleware)
+
+	fileServer := http.FileServer(assets)
+	router.PathPrefix("/").Handler(http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isValidPath(r.URL.Path) {
+			http.NotFound(w, r)
+			return
+		}
+		fileServer.ServeHTTP(w, r)
+	})))
+
+	return router
+}
+
 func isValidPath(path string) bool {
-	// Add security checks to ensure the path is within the "assets" directory
-	// For example, you can check for ".." to prevent directory traversal attacks
-	return !strings.Contains(path, "..")
+	if strings.Contains(path, "\x00") {
+		return false
+	}
+
+	for _, segment := range strings.Split(path, "/") {
+		if segment == ".." {
+			return false
+		}
+	}
+
+	return true
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
