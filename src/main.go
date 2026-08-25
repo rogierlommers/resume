@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +30,17 @@ func main() {
 	}
 
 	logrus.Infof("serving on http://localhost%s", address)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-stop
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			logrus.WithError(err).Error("failed to shut down server gracefully")
+		}
+	}()
+
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logrus.WithFields(logrus.Fields{
 			"address": address,
@@ -36,15 +49,14 @@ func main() {
 }
 
 func newRouter(assets http.FileSystem) http.Handler {
-	router := mux.NewRouter()
-	router.Use(loggingMiddleware)
-	router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	router := http.NewServeMux()
+	router.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
-	}).Methods(http.MethodGet)
+	})
 
 	fileServer := http.FileServer(assets)
-	router.PathPrefix("/").Handler(http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Handle("/", http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !isValidPath(r.URL.Path) {
 			http.NotFound(w, r)
 			return
@@ -52,7 +64,7 @@ func newRouter(assets http.FileSystem) http.Handler {
 		fileServer.ServeHTTP(w, r)
 	})))
 
-	return router
+	return loggingMiddleware(router)
 }
 
 func isValidPath(path string) bool {
@@ -67,16 +79,20 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		writer := &statusWriter{ResponseWriter: w}
-		writer.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self'; frame-ancestors 'none'")
+		writer.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' https://fonts.googleapis.com 'sha256-s+iOt/vS3ez0Yz+WtHaup4LAL9/ttRjC6Q+1zgzmiQg='; font-src https://fonts.gstatic.com; img-src 'self'; frame-ancestors 'none'")
 		writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		writer.Header().Set("X-Content-Type-Options", "nosniff")
 
 		next.ServeHTTP(writer, r)
 
+		status := writer.status
+		if status == 0 {
+			status = http.StatusOK
+		}
 		logrus.WithFields(logrus.Fields{
 			"method":   r.Method,
 			"path":     r.URL.Path,
-			"status":   writer.status,
+			"status":   status,
 			"duration": time.Since(started).String(),
 		}).Info("request completed")
 	})

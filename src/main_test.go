@@ -64,6 +64,15 @@ func TestNewRouterServesAssets(t *testing.T) {
 			if rec.Code != tt.want {
 				t.Fatalf("status = %d, want %d", rec.Code, tt.want)
 			}
+			if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Errorf("X-Content-Type-Options = %q, want nosniff", rec.Header().Get("X-Content-Type-Options"))
+			}
+			if rec.Header().Get("Referrer-Policy") != "strict-origin-when-cross-origin" {
+				t.Errorf("Referrer-Policy = %q, want strict-origin-when-cross-origin", rec.Header().Get("Referrer-Policy"))
+			}
+			if rec.Header().Get("Content-Security-Policy") == "" {
+				t.Error("Content-Security-Policy header is missing")
+			}
 			if tt.body != "" {
 				body, err := io.ReadAll(rec.Body)
 				if err != nil {
