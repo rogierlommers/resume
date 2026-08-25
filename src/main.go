@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -59,13 +60,7 @@ func isValidPath(path string) bool {
 		return false
 	}
 
-	for _, segment := range strings.Split(path, "/") {
-		if segment == ".." {
-			return false
-		}
-	}
-
-	return true
+	return !slices.Contains(strings.Split(path, "/"), "..")
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
