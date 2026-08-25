@@ -6,6 +6,9 @@ LABEL maintainer="Rogier Lommers <rogier@lommers.org>"
 COPY --chown=65532:65532 ./bin/resume /resume/resume
 COPY --chown=65532:65532 ./src/assets /assets
 
+# Uploaded build artifacts may not retain their executable mode.
+RUN chmod 0555 /resume/resume
+
 # binary will serve on 8080
 EXPOSE 8080
 
