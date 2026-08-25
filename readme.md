@@ -10,6 +10,7 @@ Run the site locally from any working directory:
 ```
 
 The server starts on `http://localhost:8080` and serves files from `src/assets`. Set `ADDRESS` to override the listen address.
+Set `ACCESS_LOGS=true` to enable request access logs. The default is `false`; only the exact value `true` enables them.
 
 # Build
 

@@ -64,7 +64,11 @@ func newRouter(assets http.FileSystem) http.Handler {
 		fileServer.ServeHTTP(w, r)
 	})))
 
-	return loggingMiddleware(router)
+	return responseMiddleware(router, accessLogsEnabled(os.Getenv("ACCESS_LOGS")))
+}
+
+func accessLogsEnabled(value string) bool {
+	return value == "true"
 }
 
 func isValidPath(path string) bool {
@@ -75,7 +79,7 @@ func isValidPath(path string) bool {
 	return !slices.Contains(strings.Split(path, "/"), "..")
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
+func responseMiddleware(next http.Handler, accessLogs bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		writer := &statusWriter{ResponseWriter: w}
@@ -89,12 +93,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
-		logrus.WithFields(logrus.Fields{
-			"method":   r.Method,
-			"path":     r.URL.Path,
-			"status":   status,
-			"duration": time.Since(started).String(),
-		}).Info("request completed")
+		if accessLogs {
+			logrus.WithFields(logrus.Fields{
+				"method":   r.Method,
+				"path":     r.URL.Path,
+				"status":   status,
+				"duration": time.Since(started).String(),
+			}).Info("request completed")
+		}
 	})
 }
 

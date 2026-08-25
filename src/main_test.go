@@ -8,6 +8,29 @@ import (
 	"testing/fstest"
 )
 
+func TestAccessLogsEnabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		value string
+		want  bool
+	}{
+		{value: "true", want: true},
+		{value: "false", want: false},
+		{value: "", want: false},
+		{value: "TRUE", want: false},
+		{value: "yes", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			if got := accessLogsEnabled(tt.value); got != tt.want {
+				t.Fatalf("ACCESS_LOGS=%q enables logs = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsValidPath(t *testing.T) {
 	t.Parallel()
 
