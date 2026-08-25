@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -12,20 +13,34 @@ import (
 func main() {
 	router := newRouter(http.Dir("assets"))
 
-	cwd, _ := os.Getwd()
+	address := os.Getenv("ADDRESS")
+	if address == "" {
+		address = ":8080"
+	}
 
-	logrus.Infof("serving on http://localhost:8080, cwd: %s", cwd)
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	server := &http.Server{
+		Addr:              address,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	logrus.Infof("serving on http://localhost%s", address)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logrus.WithFields(logrus.Fields{
-			"address": ":8080",
-			"router":  router,
-		}).Fatal("Failed to start server: ", err)
+			"address": address,
+		}).WithError(err).Fatal("failed to start server")
 	}
 }
 
 func newRouter(assets http.FileSystem) http.Handler {
 	router := mux.NewRouter()
 	router.Use(loggingMiddleware)
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok\n"))
+	}).Methods(http.MethodGet)
 
 	fileServer := http.FileServer(assets)
 	router.PathPrefix("/").Handler(http.StripPrefix("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,12 +70,43 @@ func isValidPath(path string) bool {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		writer := &statusWriter{ResponseWriter: w}
+		writer.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self'; frame-ancestors 'none'")
+		writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
 
-		// logrus.WithFields(logrus.Fields{
-		// 	"requestURI":      r.RequestURI,
-		// 	"X-Forwarded-For": r.Header.Get("X-Forwarded-For"),
-		// }).Info("incoming request")
+		next.ServeHTTP(writer, r)
 
-		next.ServeHTTP(w, r)
+		logrus.WithFields(logrus.Fields{
+			"method":   r.Method,
+			"path":     r.URL.Path,
+			"status":   writer.status,
+			"duration": time.Since(started).String(),
+		}).Info("request completed")
 	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	if w.status != 0 {
+		return
+	}
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *statusWriter) Write(body []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(body)
+}
+
+func (w *statusWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }

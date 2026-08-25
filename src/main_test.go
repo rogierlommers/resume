@@ -43,21 +43,36 @@ func TestNewRouterServesAssets(t *testing.T) {
 		"resume.pdf": {Data: []byte("pdf")},
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	tests := []struct {
+		name string
+		path string
+		want int
+		body string
+	}{
+		{name: "index", path: "/", want: http.StatusOK, body: "hello"},
+		{name: "pdf", path: "/resume.pdf", want: http.StatusOK, body: "pdf"},
+		{name: "missing", path: "/missing.txt", want: http.StatusNotFound},
+		{name: "health", path: "/healthz", want: http.StatusOK, body: "ok\n"},
 	}
 
-	body, err := io.ReadAll(rec.Body)
-	if err != nil {
-		t.Fatalf("read body: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
 
-	if string(body) != "hello" {
-		t.Fatalf("body = %q, want %q", body, "hello")
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tt.want)
+			}
+			if tt.body != "" {
+				body, err := io.ReadAll(rec.Body)
+				if err != nil {
+					t.Fatalf("read body: %v", err)
+				}
+				if string(body) != tt.body {
+					t.Fatalf("body = %q, want %q", body, tt.body)
+				}
+			}
+		})
 	}
 }
