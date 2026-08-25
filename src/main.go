@@ -14,12 +14,14 @@ import (
 )
 
 func main() {
+	accessLogs := accessLogsEnabled(os.Getenv("ACCESS_LOGS"))
 	router := newRouter(http.Dir("assets"))
 
 	address := os.Getenv("ADDRESS")
 	if address == "" {
 		address = ":8080"
 	}
+	logrus.WithField("access_logs", accessLogs).Info("access logs configured")
 
 	server := &http.Server{
 		Addr:              address,
