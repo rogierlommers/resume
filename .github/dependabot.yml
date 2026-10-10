@@ -10,6 +10,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "docker"
     directory: "/"
