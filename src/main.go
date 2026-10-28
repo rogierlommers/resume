@@ -145,7 +145,7 @@ func responseMiddleware(next http.Handler, accessLogs bool, visits *visitStore) 
 }
 
 func shouldRecordVisit(path string) bool {
-	return path != "/visits" && path != "/visits.css" && path != "/favicon.ico"
+	return path != "/visits" && path != "/visits.css" && path != "/favicon.ico" && path != "/healthz"
 }
 
 func remoteIP(address string) string {
