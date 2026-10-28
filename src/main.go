@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,13 +16,17 @@ import (
 
 func main() {
 	accessLogs := accessLogsEnabled(os.Getenv("ACCESS_LOGS"))
-	router := newRouter(http.Dir("assets"))
+	visitsToken := os.Getenv("VISITS_TOKEN")
+	router := newRouterWithConfig(http.Dir("assets"), accessLogs, visitsToken, newVisitStore())
 
 	address := os.Getenv("ADDRESS")
 	if address == "" {
 		address = ":8080"
 	}
-	logrus.WithField("access_logs", accessLogs).Info("access logs configured")
+	logrus.WithFields(logrus.Fields{
+		"access_logs":      accessLogs,
+		"visits_dashboard": visitsToken != "",
+	}).Info("server features configured")
 
 	server := &http.Server{
 		Addr:              address,
@@ -51,10 +56,20 @@ func main() {
 }
 
 func newRouter(assets http.FileSystem) http.Handler {
+	return newRouterWithConfig(assets, accessLogsEnabled(os.Getenv("ACCESS_LOGS")), os.Getenv("VISITS_TOKEN"), newVisitStore())
+}
+
+func newRouterWithConfig(assets http.FileSystem, accessLogs bool, visitsToken string, visits *visitStore) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
+	})
+	router.HandleFunc("GET /visits", visitsHandler(visits, visitsToken))
+	router.HandleFunc("GET /visits.css", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		_, _ = w.Write([]byte(visitsCSS))
 	})
 
 	fileServer := http.FileServer(assets)
@@ -66,7 +81,7 @@ func newRouter(assets http.FileSystem) http.Handler {
 		fileServer.ServeHTTP(w, r)
 	})))
 
-	return responseMiddleware(router, accessLogsEnabled(os.Getenv("ACCESS_LOGS")))
+	return responseMiddleware(router, accessLogs, visits)
 }
 
 func accessLogsEnabled(value string) bool {
@@ -81,7 +96,7 @@ func isValidPath(path string) bool {
 	return !slices.Contains(strings.Split(path, "/"), "..")
 }
 
-func responseMiddleware(next http.Handler, accessLogs bool) http.Handler {
+func responseMiddleware(next http.Handler, accessLogs bool, visits *visitStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		writer := &statusWriter{ResponseWriter: w}
@@ -95,20 +110,56 @@ func responseMiddleware(next http.Handler, accessLogs bool) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
+		duration := time.Since(started)
+		if visits != nil && shouldRecordVisit(r.URL.Path) {
+			visits.record(visit{
+				Time:          started,
+				Method:        r.Method,
+				Path:          r.URL.Path,
+				Status:        status,
+				Duration:      duration,
+				ResponseBytes: writer.bytes,
+				RemoteIP:      remoteIP(r.RemoteAddr),
+				Host:          r.Host,
+				Protocol:      r.Proto,
+				UserAgent:     r.UserAgent(),
+				Referer:       r.Referer(),
+			})
+		}
 		if accessLogs {
 			logrus.WithFields(logrus.Fields{
-				"method":   r.Method,
-				"path":     r.URL.Path,
-				"status":   status,
-				"duration": time.Since(started).String(),
+				"method":         r.Method,
+				"path":           r.URL.Path,
+				"status":         status,
+				"duration":       duration.String(),
+				"duration_ms":    float64(duration.Microseconds()) / 1000,
+				"response_bytes": writer.bytes,
+				"remote_ip":      remoteIP(r.RemoteAddr),
+				"host":           r.Host,
+				"protocol":       r.Proto,
+				"user_agent":     r.UserAgent(),
+				"referer":        sanitizeReferer(r.Referer()),
 			}).Info("request completed")
 		}
 	})
 }
 
+func shouldRecordVisit(path string) bool {
+	return path != "/visits" && path != "/visits.css"
+}
+
+func remoteIP(address string) string {
+	host, _, err := net.SplitHostPort(address)
+	if err == nil {
+		return host
+	}
+	return address
+}
+
 type statusWriter struct {
 	http.ResponseWriter
 	status int
+	bytes  int
 }
 
 func (w *statusWriter) WriteHeader(status int) {
@@ -123,7 +174,9 @@ func (w *statusWriter) Write(body []byte) (int, error) {
 	if w.status == 0 {
 		w.WriteHeader(http.StatusOK)
 	}
-	return w.ResponseWriter.Write(body)
+	n, err := w.ResponseWriter.Write(body)
+	w.bytes += n
+	return n, err
 }
 
 func (w *statusWriter) Unwrap() http.ResponseWriter {

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"testing/fstest"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestAccessLogsEnabled(t *testing.T) {
@@ -28,6 +33,18 @@ func TestAccessLogsEnabled(t *testing.T) {
 				t.Fatalf("ACCESS_LOGS=%q enables logs = %v, want %v", tt.value, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRunScriptRunsCompletePackage(t *testing.T) {
+	t.Parallel()
+
+	script, err := os.ReadFile("../run.sh")
+	if err != nil {
+		t.Fatalf("read run.sh: %v", err)
+	}
+	if !bytes.Contains(script, []byte("exec go run .")) {
+		t.Fatal("run.sh must execute the complete src package")
 	}
 }
 
@@ -104,6 +121,82 @@ func TestNewRouterServesAssets(t *testing.T) {
 				if string(body) != tt.body {
 					t.Fatalf("body = %q, want %q", body, tt.body)
 				}
+			}
+		})
+	}
+}
+
+func TestResponseMiddlewareAccessLogFields(t *testing.T) {
+	var output bytes.Buffer
+	logger := logrus.StandardLogger()
+	originalOutput := logger.Out
+	originalFormatter := logger.Formatter
+	originalLevel := logger.Level
+	logger.SetOutput(&output)
+	logger.SetFormatter(&logrus.JSONFormatter{})
+	logger.SetLevel(logrus.InfoLevel)
+	t.Cleanup(func() {
+		logger.SetOutput(originalOutput)
+		logger.SetFormatter(originalFormatter)
+		logger.SetLevel(originalLevel)
+	})
+
+	handler := responseMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte("created"))
+	}), true, nil)
+	req := httptest.NewRequest(http.MethodPost, "https://resume.example/download", nil)
+	req.RemoteAddr = "203.0.113.8:4321"
+	req.Header.Set("User-Agent", "access-log-test/1.0")
+	req.Header.Set("Referer", "https://resume.example/?token=secret")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	var entry map[string]any
+	if err := json.Unmarshal(output.Bytes(), &entry); err != nil {
+		t.Fatalf("decode access log: %v", err)
+	}
+	want := map[string]any{
+		"msg":            "request completed",
+		"method":         http.MethodPost,
+		"path":           "/download",
+		"status":         float64(http.StatusCreated),
+		"response_bytes": float64(len("created")),
+		"remote_ip":      "203.0.113.8",
+		"host":           "resume.example",
+		"protocol":       "HTTP/1.1",
+		"user_agent":     "access-log-test/1.0",
+		"referer":        "https://resume.example/",
+	}
+	for field, expected := range want {
+		if got := entry[field]; got != expected {
+			t.Errorf("access log field %q = %#v, want %#v", field, got, expected)
+		}
+	}
+	if _, ok := entry["duration"]; !ok {
+		t.Error("access log field duration is missing")
+	}
+	if _, ok := entry["duration_ms"]; !ok {
+		t.Error("access log field duration_ms is missing")
+	}
+}
+
+func TestRemoteIP(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		address string
+		want    string
+	}{
+		{address: "203.0.113.8:4321", want: "203.0.113.8"},
+		{address: "[2001:db8::1]:4321", want: "2001:db8::1"},
+		{address: "203.0.113.8", want: "203.0.113.8"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.address, func(t *testing.T) {
+			if got := remoteIP(tt.address); got != tt.want {
+				t.Fatalf("remoteIP(%q) = %q, want %q", tt.address, got, tt.want)
 			}
 		})
 	}
