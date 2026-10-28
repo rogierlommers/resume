@@ -37,6 +37,28 @@ func TestAccessLogsEnabled(t *testing.T) {
 	}
 }
 
+func TestRecord404VisitsEnabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		value string
+		want  bool
+	}{
+		{value: "true", want: true},
+		{value: "false", want: false},
+		{value: "", want: false},
+		{value: "TRUE", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			if got := record404VisitsEnabled(tt.value); got != tt.want {
+				t.Fatalf("RECORD_404_VISITS=%q enables recording = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRunScriptRunsCompletePackage(t *testing.T) {
 	t.Parallel()
 
@@ -168,7 +190,7 @@ func TestResponseMiddlewareAccessLogFields(t *testing.T) {
 	handler := responseMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte("created"))
-	}), true, nil)
+	}), true, false, nil)
 	req := httptest.NewRequest(http.MethodPost, "https://resume.example/download", nil)
 	req.RemoteAddr = "203.0.113.8:4321"
 	req.Header.Set("User-Agent", "access-log-test/1.0")

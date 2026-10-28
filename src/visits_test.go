@@ -106,7 +106,7 @@ func TestVisitsEndpointAuthenticationAndEscaping(t *testing.T) {
 	})
 	handler := newRouterWithConfig(http.FS(fstest.MapFS{
 		"index.html": {Data: []byte("hello")},
-	}), false, "correct horse battery staple", store)
+	}), false, false, "correct horse battery staple", store)
 
 	unauthorized := httptest.NewRecorder()
 	handler.ServeHTTP(unauthorized, httptest.NewRequest(http.MethodGet, "/visits", nil))
@@ -152,19 +152,53 @@ func TestShouldRecordVisitExcludesDashboard(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		path string
-		want bool
+		path            string
+		status          int
+		record404Visits bool
+		want            bool
 	}{
-		{path: "/", want: true},
-		{path: "/healthz", want: false},
-		{path: "/visits", want: false},
-		{path: "/visits.css", want: false},
-		{path: "/favicon.ico", want: false},
+		{path: "/", status: http.StatusOK, want: true},
+		{path: "/missing", status: http.StatusNotFound, want: false},
+		{path: "/missing", status: http.StatusNotFound, record404Visits: true, want: true},
+		{path: "/healthz", status: http.StatusOK, want: false},
+		{path: "/visits", status: http.StatusOK, want: false},
+		{path: "/visits.css", status: http.StatusOK, want: false},
+		{path: "/favicon.ico", status: http.StatusOK, want: false},
 	}
 	for _, tt := range tests {
-		if got := shouldRecordVisit(tt.path); got != tt.want {
-			t.Errorf("shouldRecordVisit(%q) = %v, want %v", tt.path, got, tt.want)
+		if got := shouldRecordVisit(tt.path, tt.status, tt.record404Visits); got != tt.want {
+			t.Errorf("shouldRecordVisit(%q, %d, %v) = %v, want %v", tt.path, tt.status, tt.record404Visits, got, tt.want)
 		}
+	}
+}
+
+func TestRouterOptionallyRecords404Visits(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name            string
+		record404Visits bool
+		wantTotal       int
+	}{
+		{name: "disabled", record404Visits: false, wantTotal: 0},
+		{name: "enabled", record404Visits: true, wantTotal: 1},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			store := newVisitStore()
+			handler := newRouterWithConfig(http.FS(fstest.MapFS{
+				"index.html": {Data: []byte("hello")},
+			}), false, tt.record404Visits, "token", store)
+
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/missing", nil))
+
+			if recorder.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+			}
+			if got := store.snapshot(time.Now()).Total; got != tt.wantTotal {
+				t.Fatalf("recorded visits = %d, want %d", got, tt.wantTotal)
+			}
+		})
 	}
 }
 
@@ -173,7 +207,7 @@ func TestVisitsEndpointDisabledWithoutToken(t *testing.T) {
 
 	handler := newRouterWithConfig(http.FS(fstest.MapFS{
 		"index.html": {Data: []byte("hello")},
-	}), false, "", newVisitStore())
+	}), false, false, "", newVisitStore())
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/visits", nil))
 	if recorder.Code != http.StatusServiceUnavailable {
@@ -186,7 +220,7 @@ func TestVisitsStylesheetUsesFourColumnOverviewWithoutCaching(t *testing.T) {
 
 	handler := newRouterWithConfig(http.FS(fstest.MapFS{
 		"index.html": {Data: []byte("hello")},
-	}), false, "", newVisitStore())
+	}), false, false, "", newVisitStore())
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/visits.css", nil))
 

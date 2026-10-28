@@ -16,16 +16,18 @@ import (
 
 func main() {
 	accessLogs := accessLogsEnabled(os.Getenv("ACCESS_LOGS"))
+	record404Visits := record404VisitsEnabled(os.Getenv("RECORD_404_VISITS"))
 	visitsToken := os.Getenv("VISITS_TOKEN")
-	router := newRouterWithConfig(http.Dir("assets"), accessLogs, visitsToken, newVisitStore())
+	router := newRouterWithConfig(http.Dir("assets"), accessLogs, record404Visits, visitsToken, newVisitStore())
 
 	address := os.Getenv("ADDRESS")
 	if address == "" {
 		address = ":8080"
 	}
 	logrus.WithFields(logrus.Fields{
-		"access_logs":      accessLogs,
-		"visits_dashboard": visitsToken != "",
+		"access_logs":       accessLogs,
+		"record_404_visits": record404Visits,
+		"visits_dashboard":  visitsToken != "",
 	}).Info("server features configured")
 
 	server := &http.Server{
@@ -56,10 +58,16 @@ func main() {
 }
 
 func newRouter(assets http.FileSystem) http.Handler {
-	return newRouterWithConfig(assets, accessLogsEnabled(os.Getenv("ACCESS_LOGS")), os.Getenv("VISITS_TOKEN"), newVisitStore())
+	return newRouterWithConfig(
+		assets,
+		accessLogsEnabled(os.Getenv("ACCESS_LOGS")),
+		record404VisitsEnabled(os.Getenv("RECORD_404_VISITS")),
+		os.Getenv("VISITS_TOKEN"),
+		newVisitStore(),
+	)
 }
 
-func newRouterWithConfig(assets http.FileSystem, accessLogs bool, visitsToken string, visits *visitStore) http.Handler {
+func newRouterWithConfig(assets http.FileSystem, accessLogs, record404Visits bool, visitsToken string, visits *visitStore) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -81,10 +89,14 @@ func newRouterWithConfig(assets http.FileSystem, accessLogs bool, visitsToken st
 		fileServer.ServeHTTP(w, r)
 	})))
 
-	return responseMiddleware(router, accessLogs, visits)
+	return responseMiddleware(router, accessLogs, record404Visits, visits)
 }
 
 func accessLogsEnabled(value string) bool {
+	return value == "true"
+}
+
+func record404VisitsEnabled(value string) bool {
 	return value == "true"
 }
 
@@ -96,7 +108,7 @@ func isValidPath(path string) bool {
 	return !slices.Contains(strings.Split(path, "/"), "..")
 }
 
-func responseMiddleware(next http.Handler, accessLogs bool, visits *visitStore) http.Handler {
+func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, visits *visitStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		writer := &statusWriter{ResponseWriter: w}
@@ -111,7 +123,7 @@ func responseMiddleware(next http.Handler, accessLogs bool, visits *visitStore) 
 			status = http.StatusOK
 		}
 		duration := time.Since(started)
-		if visits != nil && shouldRecordVisit(r.URL.Path) {
+		if visits != nil && shouldRecordVisit(r.URL.Path, status, record404Visits) {
 			visits.record(visit{
 				Time:          started,
 				Method:        r.Method,
@@ -144,7 +156,10 @@ func responseMiddleware(next http.Handler, accessLogs bool, visits *visitStore) 
 	})
 }
 
-func shouldRecordVisit(path string) bool {
+func shouldRecordVisit(path string, status int, record404Visits bool) bool {
+	if status == http.StatusNotFound && !record404Visits {
+		return false
+	}
 	return path != "/visits" && path != "/visits.css" && path != "/favicon.ico" && path != "/healthz"
 }
 
