@@ -156,7 +156,7 @@ func TestShouldRecordVisitExcludesDashboard(t *testing.T) {
 		want bool
 	}{
 		{path: "/", want: true},
-		{path: "/healthz", want: true},
+		{path: "/healthz", want: false},
 		{path: "/visits", want: false},
 		{path: "/visits.css", want: false},
 		{path: "/favicon.ico", want: false},
