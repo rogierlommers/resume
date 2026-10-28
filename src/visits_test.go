@@ -159,6 +159,7 @@ func TestShouldRecordVisitExcludesDashboard(t *testing.T) {
 		{path: "/healthz", want: true},
 		{path: "/visits", want: false},
 		{path: "/visits.css", want: false},
+		{path: "/favicon.ico", want: false},
 	}
 	for _, tt := range tests {
 		if got := shouldRecordVisit(tt.path); got != tt.want {
