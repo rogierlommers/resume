@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -45,6 +46,29 @@ func TestRunScriptRunsCompletePackage(t *testing.T) {
 	}
 	if !bytes.Contains(script, []byte("exec go run .")) {
 		t.Fatal("run.sh must execute the complete src package")
+	}
+}
+
+func TestFaviconAsset(t *testing.T) {
+	t.Parallel()
+
+	icon, err := os.ReadFile("assets/favicon.ico")
+	if err != nil {
+		t.Fatalf("read favicon: %v", err)
+	}
+	if len(icon) < 6 || binary.LittleEndian.Uint16(icon[0:2]) != 0 || binary.LittleEndian.Uint16(icon[2:4]) != 1 {
+		t.Fatal("favicon does not have a valid ICO header")
+	}
+	if imageCount := binary.LittleEndian.Uint16(icon[4:6]); imageCount < 4 {
+		t.Errorf("favicon contains %d sizes, want at least 4", imageCount)
+	}
+
+	page, err := os.ReadFile("assets/index.html")
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	if !bytes.Contains(page, []byte(`href="/favicon.ico"`)) {
+		t.Error("index does not link to the favicon")
 	}
 }
 
