@@ -420,7 +420,6 @@ var visitsPage = template.Must(template.New("visits").Funcs(template.FuncMap{"by
       <article><strong>{{len .Recent}}</strong><span>Recent visits retained</span></article>
       <article><strong>{{bytes .EstimatedBytes}}</strong><span>Estimated analytics memory</span></article>
     </div>
-    <p class="memory-note">Approximation of retained visit records, strings, and aggregate maps. It excludes the HTTP server, Go runtime, allocator variance, and other container memory.</p>
   </section>
 
   <section aria-labelledby="chart-heading">
