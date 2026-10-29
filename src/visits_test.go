@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -170,19 +171,62 @@ func TestVisitsEndpointAuthenticationAndEscaping(t *testing.T) {
 	})
 	handler := newRouterWithConfig(http.FS(fstest.MapFS{
 		"index.html": {Data: []byte("hello")},
-	}), false, false, "correct horse battery staple", store)
+	}), false, false, "viewer", "correct horse battery staple", store)
 
 	unauthorized := httptest.NewRecorder()
 	handler.ServeHTTP(unauthorized, httptest.NewRequest(http.MethodGet, "/visits", nil))
-	if unauthorized.Code != http.StatusUnauthorized {
-		t.Fatalf("unauthorized status = %d, want %d", unauthorized.Code, http.StatusUnauthorized)
+	if unauthorized.Code != http.StatusFound {
+		t.Fatalf("unauthorized status = %d, want %d", unauthorized.Code, http.StatusFound)
 	}
-	if unauthorized.Header().Get("WWW-Authenticate") == "" {
-		t.Error("WWW-Authenticate header is missing")
+	if unauthorized.Header().Get("Location") != "/visits/login" {
+		t.Errorf("unauthorized location = %q, want /visits/login", unauthorized.Header().Get("Location"))
+	}
+
+	loginPage := httptest.NewRecorder()
+	handler.ServeHTTP(loginPage, httptest.NewRequest(http.MethodGet, "/visits/login", nil))
+	if loginPage.Code != http.StatusOK || !strings.Contains(loginPage.Body.String(), `autocomplete="current-password"`) {
+		t.Fatalf("login page status = %d or password-manager fields are missing", loginPage.Code)
+	}
+
+	wrongLogin := httptest.NewRecorder()
+	wrongRequest := httptest.NewRequest(http.MethodPost, "/visits/login", strings.NewReader(url.Values{
+		"username": {"viewer"}, "password": {"wrong"},
+	}.Encode()))
+	wrongRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	handler.ServeHTTP(wrongLogin, wrongRequest)
+	if wrongLogin.Code != http.StatusUnauthorized || !strings.Contains(wrongLogin.Body.String(), "username or password is incorrect") {
+		t.Fatalf("wrong login status = %d and body = %q", wrongLogin.Code, wrongLogin.Body.String())
+	}
+	wrongUsername := httptest.NewRecorder()
+	wrongUsernameRequest := httptest.NewRequest(http.MethodPost, "/visits/login", strings.NewReader(url.Values{
+		"username": {"someone-else"}, "password": {"correct horse battery staple"},
+	}.Encode()))
+	wrongUsernameRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	handler.ServeHTTP(wrongUsername, wrongUsernameRequest)
+	if wrongUsername.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong username status = %d, want %d", wrongUsername.Code, http.StatusUnauthorized)
+	}
+
+	login := httptest.NewRecorder()
+	loginRequest := httptest.NewRequest(http.MethodPost, "/visits/login", strings.NewReader(url.Values{
+		"username": {"viewer"}, "password": {"correct horse battery staple"},
+	}.Encode()))
+	loginRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	handler.ServeHTTP(login, loginRequest)
+	if login.Code != http.StatusSeeOther || login.Header().Get("Location") != "/visits" {
+		t.Fatalf("login status = %d and location = %q, want redirect to /visits", login.Code, login.Header().Get("Location"))
+	}
+	cookies := login.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("login cookies = %d, want 1", len(cookies))
+	}
+	session := cookies[0]
+	if !session.HttpOnly || session.SameSite != http.SameSiteStrictMode || session.Path != "/visits" || session.MaxAge <= 0 {
+		t.Errorf("session cookie is missing security attributes: %#v", session)
 	}
 
 	request := httptest.NewRequest(http.MethodGet, "/visits", nil)
-	request.SetBasicAuth("viewer", "correct horse battery staple")
+	request.AddCookie(session)
 	authorized := httptest.NewRecorder()
 	handler.ServeHTTP(authorized, request)
 	if authorized.Code != http.StatusOK {
@@ -210,6 +254,62 @@ func TestVisitsEndpointAuthenticationAndEscaping(t *testing.T) {
 	if got := store.snapshot(time.Now()).Total; got != 1 {
 		t.Errorf("total after dashboard requests = %d, want 1 because dashboard views are excluded", got)
 	}
+
+	logoutRequest := httptest.NewRequest(http.MethodPost, "/visits/logout", nil)
+	logoutRequest.AddCookie(session)
+	logout := httptest.NewRecorder()
+	handler.ServeHTTP(logout, logoutRequest)
+	if logout.Code != http.StatusSeeOther || logout.Result().Cookies()[0].MaxAge >= 0 {
+		t.Fatalf("logout did not clear the session: status %d, cookies %#v", logout.Code, logout.Result().Cookies())
+	}
+	afterLogoutRequest := httptest.NewRequest(http.MethodGet, "/visits", nil)
+	afterLogoutRequest.AddCookie(session)
+	afterLogout := httptest.NewRecorder()
+	handler.ServeHTTP(afterLogout, afterLogoutRequest)
+	if afterLogout.Code != http.StatusFound {
+		t.Fatalf("reusing signed-out session status = %d, want %d", afterLogout.Code, http.StatusFound)
+	}
+}
+
+func TestVisitsSessionExpiresAndUsesSecureCookieBehindHTTPSProxy(t *testing.T) {
+	t.Parallel()
+
+	auth := newVisitsAuth("viewer", "secret")
+	now := time.Date(2026, time.October, 29, 10, 0, 0, 0, time.UTC)
+	request := httptest.NewRequest(http.MethodPost, "/visits/login", nil)
+	request.Header.Set("X-Forwarded-Proto", "https")
+	recorder := httptest.NewRecorder()
+	if err := auth.startSession(recorder, request, now); err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	cookie := recorder.Result().Cookies()[0]
+	if !cookie.Secure {
+		t.Error("session cookie is not Secure for a proxied HTTPS request")
+	}
+	authorized := httptest.NewRequest(http.MethodGet, "/visits", nil)
+	authorized.AddCookie(cookie)
+	if !auth.authorized(authorized, now.Add(visitsSessionTTL-time.Second)) {
+		t.Error("session expired before its configured lifetime")
+	}
+	if auth.authorized(authorized, now.Add(visitsSessionTTL)) {
+		t.Error("session remains valid at its expiry time")
+	}
+}
+
+func TestVisitsSessionsAreBounded(t *testing.T) {
+	t.Parallel()
+
+	auth := newVisitsAuth("viewer", "secret")
+	now := time.Date(2026, time.October, 29, 10, 0, 0, 0, time.UTC)
+	request := httptest.NewRequest(http.MethodPost, "/visits/login", nil)
+	for index := 0; index < maxVisitsSessions+1; index++ {
+		if err := auth.startSession(httptest.NewRecorder(), request, now.Add(time.Duration(index)*time.Second)); err != nil {
+			t.Fatalf("start session %d: %v", index, err)
+		}
+	}
+	if len(auth.sessions) != maxVisitsSessions {
+		t.Fatalf("retained sessions = %d, want %d", len(auth.sessions), maxVisitsSessions)
+	}
 }
 
 func TestShouldRecordVisitExcludesDashboard(t *testing.T) {
@@ -226,6 +326,8 @@ func TestShouldRecordVisitExcludesDashboard(t *testing.T) {
 		{path: "/missing", status: http.StatusNotFound, record404Visits: true, want: true},
 		{path: "/healthz", status: http.StatusOK, want: false},
 		{path: "/visits", status: http.StatusOK, want: false},
+		{path: "/visits/login", status: http.StatusOK, want: false},
+		{path: "/visits/logout", status: http.StatusSeeOther, want: false},
 		{path: "/visits.css", status: http.StatusOK, want: false},
 		{path: "/favicon.ico", status: http.StatusOK, want: false},
 	}
@@ -251,7 +353,7 @@ func TestRouterOptionallyRecords404Visits(t *testing.T) {
 			store := newVisitStore()
 			handler := newRouterWithConfig(http.FS(fstest.MapFS{
 				"index.html": {Data: []byte("hello")},
-			}), false, tt.record404Visits, "token", store)
+			}), false, tt.record404Visits, "viewer", "token", store)
 
 			recorder := httptest.NewRecorder()
 			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/missing", nil))
@@ -266,16 +368,30 @@ func TestRouterOptionallyRecords404Visits(t *testing.T) {
 	}
 }
 
-func TestVisitsEndpointDisabledWithoutToken(t *testing.T) {
+func TestVisitsEndpointDisabledWithoutCredentials(t *testing.T) {
 	t.Parallel()
 
-	handler := newRouterWithConfig(http.FS(fstest.MapFS{
-		"index.html": {Data: []byte("hello")},
-	}), false, false, "", newVisitStore())
-	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/visits", nil))
-	if recorder.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusServiceUnavailable)
+	for _, credentials := range []struct {
+		name     string
+		username string
+		password string
+	}{
+		{name: "both missing"},
+		{name: "username missing", password: "token"},
+		{name: "token missing", username: "viewer"},
+	} {
+		t.Run(credentials.name, func(t *testing.T) {
+			handler := newRouterWithConfig(http.FS(fstest.MapFS{
+				"index.html": {Data: []byte("hello")},
+			}), false, false, credentials.username, credentials.password, newVisitStore())
+			for _, path := range []string{"/visits", "/visits/login"} {
+				recorder := httptest.NewRecorder()
+				handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+				if recorder.Code != http.StatusServiceUnavailable {
+					t.Errorf("%s status = %d, want %d", path, recorder.Code, http.StatusServiceUnavailable)
+				}
+			}
+		})
 	}
 }
 
@@ -284,7 +400,7 @@ func TestVisitsStylesheetUsesFourColumnOverviewWithoutCaching(t *testing.T) {
 
 	handler := newRouterWithConfig(http.FS(fstest.MapFS{
 		"index.html": {Data: []byte("hello")},
-	}), false, false, "", newVisitStore())
+	}), false, false, "", "", newVisitStore())
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/visits.css", nil))
 

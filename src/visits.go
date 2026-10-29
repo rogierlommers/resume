@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -18,12 +20,15 @@ import (
 )
 
 const (
-	maxRecentVisits  = 1000
-	aggregateDays    = 30
-	maxDimensionKeys = 1000
-	maxUniquePerDay  = 100000
-	maxPathLength    = 512
-	maxHeaderLength  = 1024
+	maxRecentVisits   = 1000
+	aggregateDays     = 30
+	maxDimensionKeys  = 1000
+	maxUniquePerDay   = 100000
+	maxPathLength     = 512
+	maxHeaderLength   = 1024
+	visitsSessionTTL  = 12 * time.Hour
+	visitsCookieName  = "visits_session"
+	maxVisitsSessions = 32
 )
 
 type visit struct {
@@ -58,6 +63,14 @@ type visitStore struct {
 type visitsStorage interface {
 	Record(visit) error
 	Snapshot(time.Time) (visitSnapshot, error)
+}
+
+type visitsAuth struct {
+	usernameHash [sha256.Size]byte
+	passwordHash [sha256.Size]byte
+	configured   bool
+	mu           sync.Mutex
+	sessions     map[[sha256.Size]byte]time.Time
 }
 
 type namedCount struct {
@@ -390,29 +403,123 @@ func topCounts(counts map[string]int, limit int) []namedCount {
 	return result
 }
 
-func visitsAuthorized(r *http.Request, token string) bool {
-	_, password, ok := r.BasicAuth()
-	if !ok {
-		return false
+func newVisitsAuth(username, password string) *visitsAuth {
+	return &visitsAuth{
+		usernameHash: sha256.Sum256([]byte(username)),
+		passwordHash: sha256.Sum256([]byte(password)),
+		configured:   username != "" && password != "",
+		sessions:     make(map[[sha256.Size]byte]time.Time),
 	}
-	providedHash := sha256.Sum256([]byte(password))
-	expectedHash := sha256.Sum256([]byte(token))
-	return subtle.ConstantTimeCompare(providedHash[:], expectedHash[:]) == 1
 }
 
-func visitsHandler(store visitsStorage, token string) http.HandlerFunc {
+func (a *visitsAuth) credentialsMatch(username, password string) bool {
+	providedUsernameHash := sha256.Sum256([]byte(username))
+	providedPasswordHash := sha256.Sum256([]byte(password))
+	usernameMatches := subtle.ConstantTimeCompare(providedUsernameHash[:], a.usernameHash[:])
+	passwordMatches := subtle.ConstantTimeCompare(providedPasswordHash[:], a.passwordHash[:])
+	return usernameMatches&passwordMatches == 1
+}
+
+func (a *visitsAuth) startSession(w http.ResponseWriter, r *http.Request, now time.Time) error {
+	var value [32]byte
+	if _, err := rand.Read(value[:]); err != nil {
+		return err
+	}
+	expires := now.Add(visitsSessionTTL)
+	a.mu.Lock()
+	a.purgeExpired(now)
+	if len(a.sessions) >= maxVisitsSessions {
+		a.evictOldestSession()
+	}
+	a.sessions[sha256.Sum256(value[:])] = expires
+	a.mu.Unlock()
+	http.SetCookie(w, &http.Cookie{
+		Name:     visitsCookieName,
+		Value:    base64.RawURLEncoding.EncodeToString(value[:]),
+		Path:     "/visits",
+		Expires:  expires,
+		MaxAge:   int(visitsSessionTTL.Seconds()),
+		HttpOnly: true,
+		Secure:   requestUsesHTTPS(r),
+		SameSite: http.SameSiteStrictMode,
+	})
+	return nil
+}
+
+func (a *visitsAuth) authorized(r *http.Request, now time.Time) bool {
+	cookie, err := r.Cookie(visitsCookieName)
+	if err != nil {
+		return false
+	}
+	value, err := base64.RawURLEncoding.DecodeString(cookie.Value)
+	if err != nil || len(value) != 32 {
+		return false
+	}
+	key := sha256.Sum256(value)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.purgeExpired(now)
+	expires, exists := a.sessions[key]
+	return exists && expires.After(now)
+}
+
+func (a *visitsAuth) endSession(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(visitsCookieName); err == nil {
+		if value, err := base64.RawURLEncoding.DecodeString(cookie.Value); err == nil && len(value) == 32 {
+			a.mu.Lock()
+			delete(a.sessions, sha256.Sum256(value))
+			a.mu.Unlock()
+		}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     visitsCookieName,
+		Path:     "/visits",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   requestUsesHTTPS(r),
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (a *visitsAuth) purgeExpired(now time.Time) {
+	for key, expires := range a.sessions {
+		if !expires.After(now) {
+			delete(a.sessions, key)
+		}
+	}
+}
+
+func (a *visitsAuth) evictOldestSession() {
+	var oldestKey [sha256.Size]byte
+	var oldestExpiry time.Time
+	for key, expires := range a.sessions {
+		if oldestExpiry.IsZero() || expires.Before(oldestExpiry) {
+			oldestKey = key
+			oldestExpiry = expires
+		}
+	}
+	if !oldestExpiry.IsZero() {
+		delete(a.sessions, oldestKey)
+	}
+}
+
+func requestUsesHTTPS(r *http.Request) bool {
+	forwardedProto := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0])
+	return r.TLS != nil || strings.EqualFold(forwardedProto, "https")
+}
+
+func visitsHandler(store visitsStorage, auth *visitsAuth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if token == "" {
+		w.Header().Set("Cache-Control", "no-store")
+		if !auth.configured {
 			http.Error(w, "visits dashboard is not configured", http.StatusServiceUnavailable)
 			return
 		}
-		if !visitsAuthorized(r, token) {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Visits", charset="UTF-8"`)
-			http.Error(w, "authentication required", http.StatusUnauthorized)
+		if !auth.authorized(r, time.Now()) {
+			http.Redirect(w, r, "/visits/login", http.StatusFound)
 			return
 		}
 
-		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		snapshot, err := store.Snapshot(time.Now())
 		if err != nil {
@@ -429,6 +536,84 @@ func visitsHandler(store visitsStorage, token string) http.HandlerFunc {
 	}
 }
 
+func visitsLoginHandler(auth *visitsAuth) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !auth.configured {
+			http.Error(w, "visits dashboard is not configured", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		if r.Method == http.MethodGet {
+			if auth.authorized(r, time.Now()) {
+				http.Redirect(w, r, "/visits", http.StatusFound)
+				return
+			}
+			renderVisitsLogin(w, false, http.StatusOK)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
+		if err := r.ParseForm(); err != nil {
+			renderVisitsLogin(w, true, http.StatusBadRequest)
+			return
+		}
+		if !auth.credentialsMatch(r.FormValue("username"), r.FormValue("password")) {
+			renderVisitsLogin(w, true, http.StatusUnauthorized)
+			return
+		}
+		if err := auth.startSession(w, r, time.Now()); err != nil {
+			logrus.WithError(err).Error("failed to create visits session")
+			http.Error(w, "failed to sign in", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/visits", http.StatusSeeOther)
+	}
+}
+
+func visitsLogoutHandler(auth *visitsAuth) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		auth.endSession(w, r)
+		w.Header().Set("Cache-Control", "no-store")
+		http.Redirect(w, r, "/visits/login", http.StatusSeeOther)
+	}
+}
+
+func renderVisitsLogin(w http.ResponseWriter, invalid bool, status int) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	if err := visitsLoginPage.Execute(w, struct{ Invalid bool }{Invalid: invalid}); err != nil {
+		logrus.WithError(err).Error("failed to render visits login")
+	}
+}
+
+var visitsLoginPage = template.Must(template.New("visits-login").Parse(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sign in · Visits</title>
+  <link rel="stylesheet" href="/visits.css">
+</head>
+<body class="login-body">
+<main class="login-shell">
+  <section class="login-card" aria-labelledby="login-heading">
+    <p class="eyebrow">Private analytics</p>
+    <h1 id="login-heading">Welcome back</h1>
+    <p>Sign in to view visits.</p>
+    {{if .Invalid}}<p class="login-error" role="alert">The username or password is incorrect.</p>{{end}}
+    <form method="post" action="/visits/login" class="login-form">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Sign in</button>
+    </form>
+  </section>
+</main>
+</body>
+</html>`))
+
 var visitsPage = template.Must(template.New("visits").Funcs(template.FuncMap{"bytes": formatBytes}).Parse(`<!doctype html>
 <html lang="en">
 <head>
@@ -440,10 +625,13 @@ var visitsPage = template.Must(template.New("visits").Funcs(template.FuncMap{"by
 </head>
 <body>
 <main>
-  <header>
-    <p class="eyebrow">Private analytics</p>
-    <h1>Visits</h1>
-    <p>Seven UTC calendar days starting {{.Since.Format "2 January 2006"}}. {{.StorageNote}}</p>
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">Private analytics</p>
+      <h1>Visits</h1>
+      <p>Seven UTC calendar days starting {{.Since.Format "2 January 2006"}}. {{.StorageNote}}</p>
+    </div>
+    <form method="post" action="/visits/logout"><button class="secondary-button" type="submit">Sign out</button></form>
   </header>
 
   <section aria-labelledby="overview-heading">
@@ -500,7 +688,25 @@ header { margin-bottom: 2.5rem; }
 h1 { margin: 0; font-size: clamp(2.5rem, 8vw, 5rem); letter-spacing: -.05em; }
 h2 { margin-top: 0; font-size: 1.15rem; }
 .eyebrow { color: #71d4b4; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.dashboard-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
+.dashboard-header form { flex: 0 0 auto; }
 section { margin-bottom: 2rem; }
+.login-body { min-height: 100vh; }
+.login-shell { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; }
+.login-card { width: min(28rem, 100%); margin: 0; padding: 2rem; border: 1px solid #303b47; border-radius: 1rem; background: #171d24; box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, .3); }
+.login-card h1 { font-size: clamp(2.25rem, 10vw, 3.5rem); }
+.login-card > p:not(.eyebrow):not(.login-error) { color: #aab7c4; }
+.login-form { display: grid; gap: .65rem; margin-top: 1.75rem; }
+.login-form label { margin-top: .5rem; font-weight: 700; }
+.login-form input { width: 100%; padding: .85rem 1rem; border: 1px solid #526170; border-radius: .55rem; background: #101419; color: #eaf0f6; font: inherit; }
+.login-form input:focus { outline: 3px solid rgba(113, 212, 180, .3); border-color: #71d4b4; }
+button { padding: .8rem 1rem; border: 1px solid #71d4b4; border-radius: .55rem; background: #71d4b4; color: #101419; font: inherit; font-weight: 800; cursor: pointer; }
+button:hover { background: #a4ead3; }
+button:focus-visible { outline: 3px solid rgba(113, 212, 180, .4); outline-offset: 2px; }
+.login-form button { margin-top: 1rem; }
+.secondary-button { background: transparent; color: #eaf0f6; }
+.secondary-button:hover { background: #243039; }
+.login-error { padding: .8rem 1rem; border: 1px solid #ef8d8d; border-radius: .55rem; background: rgba(176, 47, 47, .18); color: #ffd4d4; }
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .top-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .metrics article, .top-grid section { padding: 1.25rem; border: 1px solid #303b47; border-radius: .75rem; background: #171d24; }
@@ -530,5 +736,5 @@ tbody tr:last-child td { border-bottom: 0; }
 .ranking strong { color: #71d4b4; }
 footer { color: #7f8e9d; font-size: .85rem; }
 @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) { main { padding-top: 2rem; } .metrics, .top-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { main { padding-top: 2rem; } .metrics, .top-grid { grid-template-columns: 1fr; } .dashboard-header { display: block; } }
 `

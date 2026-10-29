@@ -17,13 +17,14 @@ import (
 func main() {
 	accessLogs := accessLogsEnabled(os.Getenv("ACCESS_LOGS"))
 	record404Visits := record404VisitsEnabled(os.Getenv("RECORD_404_VISITS"))
+	visitsUsername := os.Getenv("VISITS_USERNAME")
 	visitsToken := os.Getenv("VISITS_TOKEN")
 	visits, closeVisits, err := configuredVisitsStorage(os.Getenv("VISITS_DB_PATH"))
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to configure visits storage")
 	}
 	defer closeVisits()
-	router := newRouterWithConfig(http.Dir("assets"), accessLogs, record404Visits, visitsToken, visits)
+	router := newRouterWithConfig(http.Dir("assets"), accessLogs, record404Visits, visitsUsername, visitsToken, visits)
 
 	address := os.Getenv("ADDRESS")
 	if address == "" {
@@ -32,7 +33,7 @@ func main() {
 	logrus.WithFields(logrus.Fields{
 		"access_logs":       accessLogs,
 		"record_404_visits": record404Visits,
-		"visits_dashboard":  visitsToken != "",
+		"visits_dashboard":  visitsUsername != "" && visitsToken != "",
 		"visits_sqlite":     os.Getenv("VISITS_DB_PATH") != "",
 	}).Info("server features configured")
 
@@ -83,18 +84,23 @@ func newRouter(assets http.FileSystem) http.Handler {
 		assets,
 		accessLogsEnabled(os.Getenv("ACCESS_LOGS")),
 		record404VisitsEnabled(os.Getenv("RECORD_404_VISITS")),
+		os.Getenv("VISITS_USERNAME"),
 		os.Getenv("VISITS_TOKEN"),
 		newVisitStore(),
 	)
 }
 
-func newRouterWithConfig(assets http.FileSystem, accessLogs, record404Visits bool, visitsToken string, visits visitsStorage) http.Handler {
+func newRouterWithConfig(assets http.FileSystem, accessLogs, record404Visits bool, visitsUsername, visitsToken string, visits visitsStorage) http.Handler {
 	router := http.NewServeMux()
+	visitsAuth := newVisitsAuth(visitsUsername, visitsToken)
 	router.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
-	router.HandleFunc("GET /visits", visitsHandler(visits, visitsToken))
+	router.HandleFunc("GET /visits", visitsHandler(visits, visitsAuth))
+	router.HandleFunc("GET /visits/login", visitsLoginHandler(visitsAuth))
+	router.HandleFunc("POST /visits/login", visitsLoginHandler(visitsAuth))
+	router.HandleFunc("POST /visits/logout", visitsLogoutHandler(visitsAuth))
 	router.HandleFunc("GET /visits.css", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
@@ -183,7 +189,7 @@ func shouldRecordVisit(path string, status int, record404Visits bool) bool {
 	if status == http.StatusNotFound && !record404Visits {
 		return false
 	}
-	return path != "/visits" && path != "/visits.css" && path != "/favicon.ico" && path != "/healthz"
+	return path != "/visits" && !strings.HasPrefix(path, "/visits/") && path != "/visits.css" && path != "/favicon.ico" && path != "/healthz"
 }
 
 func remoteIP(address string) string {
