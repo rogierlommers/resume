@@ -18,7 +18,12 @@ func main() {
 	accessLogs := accessLogsEnabled(os.Getenv("ACCESS_LOGS"))
 	record404Visits := record404VisitsEnabled(os.Getenv("RECORD_404_VISITS"))
 	visitsToken := os.Getenv("VISITS_TOKEN")
-	router := newRouterWithConfig(http.Dir("assets"), accessLogs, record404Visits, visitsToken, newVisitStore())
+	visits, closeVisits, err := configuredVisitsStorage(os.Getenv("VISITS_DB_PATH"))
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to configure visits storage")
+	}
+	defer closeVisits()
+	router := newRouterWithConfig(http.Dir("assets"), accessLogs, record404Visits, visitsToken, visits)
 
 	address := os.Getenv("ADDRESS")
 	if address == "" {
@@ -28,6 +33,7 @@ func main() {
 		"access_logs":       accessLogs,
 		"record_404_visits": record404Visits,
 		"visits_dashboard":  visitsToken != "",
+		"visits_sqlite":     os.Getenv("VISITS_DB_PATH") != "",
 	}).Info("server features configured")
 
 	server := &http.Server{
@@ -57,6 +63,21 @@ func main() {
 	}
 }
 
+func configuredVisitsStorage(databasePath string) (visitsStorage, func(), error) {
+	if databasePath == "" {
+		return newVisitStore(), func() {}, nil
+	}
+	store, err := newSQLiteVisitStore(databasePath)
+	if err != nil {
+		return nil, func() {}, err
+	}
+	return store, func() {
+		if err := store.Close(); err != nil {
+			logrus.WithError(err).Error("failed to close visits database")
+		}
+	}, nil
+}
+
 func newRouter(assets http.FileSystem) http.Handler {
 	return newRouterWithConfig(
 		assets,
@@ -67,7 +88,7 @@ func newRouter(assets http.FileSystem) http.Handler {
 	)
 }
 
-func newRouterWithConfig(assets http.FileSystem, accessLogs, record404Visits bool, visitsToken string, visits *visitStore) http.Handler {
+func newRouterWithConfig(assets http.FileSystem, accessLogs, record404Visits bool, visitsToken string, visits visitsStorage) http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -108,7 +129,7 @@ func isValidPath(path string) bool {
 	return !slices.Contains(strings.Split(path, "/"), "..")
 }
 
-func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, visits *visitStore) http.Handler {
+func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, visits visitsStorage) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		writer := &statusWriter{ResponseWriter: w}
@@ -124,7 +145,7 @@ func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, vis
 		}
 		duration := time.Since(started)
 		if visits != nil && shouldRecordVisit(r.URL.Path, status, record404Visits) {
-			visits.record(visit{
+			if err := visits.Record(visit{
 				Time:          started,
 				Method:        r.Method,
 				Path:          r.URL.Path,
@@ -136,7 +157,9 @@ func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, vis
 				Protocol:      r.Proto,
 				UserAgent:     r.UserAgent(),
 				Referer:       r.Referer(),
-			})
+			}); err != nil {
+				logrus.WithError(err).Error("failed to record visit")
+			}
 		}
 		if accessLogs {
 			logrus.WithFields(logrus.Fields{

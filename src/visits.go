@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -53,6 +55,11 @@ type visitStore struct {
 	recent []visit
 }
 
+type visitsStorage interface {
+	Record(visit) error
+	Snapshot(time.Time) (visitSnapshot, error)
+}
+
 type namedCount struct {
 	Name  string
 	Count int
@@ -80,6 +87,8 @@ type visitSnapshot struct {
 	TopUserAgents   []namedCount
 	Recent          []visit
 	EstimatedBytes  uint64
+	StorageLabel    string
+	StorageNote     string
 	ChartDays       []chartDay
 	ChartPeak       int
 }
@@ -88,13 +97,17 @@ func newVisitStore() *visitStore {
 	return &visitStore{days: make(map[string]*visitDay)}
 }
 
+func (s *visitStore) Record(v visit) error {
+	s.record(v)
+	return nil
+}
+
+func (s *visitStore) Snapshot(now time.Time) (visitSnapshot, error) {
+	return s.snapshot(now), nil
+}
+
 func (s *visitStore) record(v visit) {
-	v.Path = truncate(v.Path, maxPathLength)
-	v.Host = truncate(v.Host, maxHeaderLength)
-	v.Protocol = truncate(v.Protocol, maxHeaderLength)
-	v.UserAgent = truncate(v.UserAgent, maxHeaderLength)
-	v.Referer = truncate(sanitizeReferer(v.Referer), maxHeaderLength)
-	v.RemoteIP = truncate(v.RemoteIP, maxHeaderLength)
+	v = normalizeVisit(v)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -132,13 +145,28 @@ func (s *visitStore) record(v visit) {
 	}
 }
 
+func normalizeVisit(v visit) visit {
+	v.Path = truncate(v.Path, maxPathLength)
+	v.Host = truncate(v.Host, maxHeaderLength)
+	v.Protocol = truncate(v.Protocol, maxHeaderLength)
+	v.UserAgent = truncate(v.UserAgent, maxHeaderLength)
+	v.Referer = truncate(sanitizeReferer(v.Referer), maxHeaderLength)
+	v.RemoteIP = truncate(v.RemoteIP, maxHeaderLength)
+	return v
+}
+
 func (s *visitStore) snapshot(now time.Time) visitSnapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.purge(now)
 	since := startOfUTCDay(now).AddDate(0, 0, -6)
-	snapshot := visitSnapshot{GeneratedAt: now.UTC(), Since: since}
+	snapshot := visitSnapshot{
+		GeneratedAt:  now.UTC(),
+		Since:        since,
+		StorageLabel: "Estimated analytics memory",
+		StorageNote:  "Data resets when the server restarts.",
+	}
 	unique := make(map[string]struct{})
 	paths := make(map[string]int)
 	referrers := make(map[string]int)
@@ -372,7 +400,7 @@ func visitsAuthorized(r *http.Request, token string) bool {
 	return subtle.ConstantTimeCompare(providedHash[:], expectedHash[:]) == 1
 }
 
-func visitsHandler(store *visitStore, token string) http.HandlerFunc {
+func visitsHandler(store visitsStorage, token string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if token == "" {
 			http.Error(w, "visits dashboard is not configured", http.StatusServiceUnavailable)
@@ -386,8 +414,14 @@ func visitsHandler(store *visitStore, token string) http.HandlerFunc {
 
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		snapshot, err := store.Snapshot(time.Now())
+		if err != nil {
+			logrus.WithError(err).Error("failed to load visits")
+			http.Error(w, "failed to load visits", http.StatusInternalServerError)
+			return
+		}
 		var page bytes.Buffer
-		if err := visitsPage.Execute(&page, store.snapshot(time.Now())); err != nil {
+		if err := visitsPage.Execute(&page, snapshot); err != nil {
 			http.Error(w, "failed to render visits dashboard", http.StatusInternalServerError)
 			return
 		}
@@ -407,9 +441,9 @@ var visitsPage = template.Must(template.New("visits").Funcs(template.FuncMap{"by
 <body>
 <main>
   <header>
-    <p class="eyebrow">In-memory analytics</p>
+    <p class="eyebrow">Private analytics</p>
     <h1>Visits</h1>
-    <p>Seven UTC calendar days starting {{.Since.Format "2 January 2006"}}. Data resets when the server restarts.</p>
+    <p>Seven UTC calendar days starting {{.Since.Format "2 January 2006"}}. {{.StorageNote}}</p>
   </header>
 
   <section aria-labelledby="overview-heading">
@@ -418,7 +452,7 @@ var visitsPage = template.Must(template.New("visits").Funcs(template.FuncMap{"by
       <article><strong>{{.Total}}</strong><span>Visits</span></article>
       <article><strong>{{.Unique}}{{if .UniqueIsMinimum}}+{{end}}</strong><span>Unique IPs</span></article>
       <article><strong>{{len .Recent}}</strong><span>Recent visits retained</span></article>
-      <article><strong>{{bytes .EstimatedBytes}}</strong><span>Estimated analytics memory</span></article>
+      <article><strong>{{bytes .EstimatedBytes}}</strong><span>{{.StorageLabel}}</span></article>
     </div>
   </section>
 

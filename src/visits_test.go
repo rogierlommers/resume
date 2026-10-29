@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -91,6 +92,69 @@ func TestVisitStoreCapsRecentVisits(t *testing.T) {
 	snapshot := store.snapshot(now)
 	if len(snapshot.Recent) != maxRecentVisits {
 		t.Fatalf("recent visits = %d, want %d", len(snapshot.Recent), maxRecentVisits)
+	}
+}
+
+func TestSQLiteVisitStorePersistsAndExpiresVisits(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.October, 28, 12, 0, 0, 0, time.UTC)
+	path := filepath.Join(t.TempDir(), "visits.db")
+	store, err := newSQLiteVisitStore(path)
+	if err != nil {
+		t.Fatalf("open SQLite visit store: %v", err)
+	}
+	visits := []visit{
+		{Time: now.AddDate(0, 0, -30), Path: "/expired", RemoteIP: "192.0.2.1"},
+		{Time: now.AddDate(0, 0, -6), Path: "/", RemoteIP: "192.0.2.2", Referer: "https://search.example/?secret=value"},
+		{Time: now, Path: "/", RemoteIP: "192.0.2.2", UserAgent: "browser"},
+		{Time: now, Path: "/resume.pdf", RemoteIP: "192.0.2.3", UserAgent: "browser"},
+	}
+	for _, value := range visits {
+		if err := store.Record(value); err != nil {
+			t.Fatalf("record visit: %v", err)
+		}
+	}
+	if err := store.Close(); err != nil {
+		t.Fatalf("close SQLite visit store: %v", err)
+	}
+
+	store, err = newSQLiteVisitStore(path)
+	if err != nil {
+		t.Fatalf("reopen SQLite visit store: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	snapshot, err := store.Snapshot(now)
+	if err != nil {
+		t.Fatalf("snapshot SQLite visit store: %v", err)
+	}
+	if snapshot.Total != 3 || snapshot.Unique != 2 {
+		t.Errorf("total = %d and unique = %d, want 3 and 2", snapshot.Total, snapshot.Unique)
+	}
+	if len(snapshot.TopPaths) == 0 || snapshot.TopPaths[0] != (namedCount{Name: "/", Count: 2}) {
+		t.Errorf("top paths = %#v, want / with count 2 first", snapshot.TopPaths)
+	}
+	if !containsCount(snapshot.TopReferrers, namedCount{Name: "https://search.example/", Count: 1}) {
+		t.Errorf("top referrers = %#v, want sanitized referrer", snapshot.TopReferrers)
+	}
+	if len(snapshot.Recent) != 3 || snapshot.Recent[0].Path != "/resume.pdf" {
+		t.Errorf("recent visits = %#v, want three retained visits newest-first", snapshot.Recent)
+	}
+	if snapshot.ChartDays[aggregateDays-1].Visits != 2 || snapshot.ChartPeak != 2 {
+		t.Errorf("chart current day = %d and peak = %d, want 2 and 2", snapshot.ChartDays[aggregateDays-1].Visits, snapshot.ChartPeak)
+	}
+	if snapshot.EstimatedBytes == 0 || snapshot.StorageLabel != "SQLite database size" {
+		t.Errorf("storage bytes = %d and label = %q, want a SQLite size", snapshot.EstimatedBytes, snapshot.StorageLabel)
+	}
+}
+
+func TestSQLiteVisitStoreRejectsMissingDirectory(t *testing.T) {
+	t.Parallel()
+
+	store, err := newSQLiteVisitStore(filepath.Join(t.TempDir(), "missing", "visits.db"))
+	if err == nil {
+		_ = store.Close()
+		t.Fatal("opening a database in a missing directory succeeded")
 	}
 }
 
