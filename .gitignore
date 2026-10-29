@@ -1,3 +1,10 @@
+# Binaries
 bin/*
 !bin/.gitkeep
 .DS_Store
+
+# SQLite database files
+!data/.gitkeep
+data/visits.db
+data/visits.db-shm
+data/visits.db-wal
