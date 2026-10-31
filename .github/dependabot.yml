@@ -1,5 +1,10 @@
 version: 2
-enable-beta-ecosystems: true
+
+multi-ecosystem-groups:
+  infrastructure:
+    schedule:
+      interval: "weekly"
+
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
@@ -8,17 +13,12 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
-    groups:
-      github-actions-minor-and-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "infrastructure"
 
   - package-ecosystem: "docker"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "infrastructure"
