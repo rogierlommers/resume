@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -192,7 +193,8 @@ func TestResponseMiddlewareAccessLogFields(t *testing.T) {
 		_, _ = w.Write([]byte("created"))
 	}), true, false, nil)
 	req := httptest.NewRequest(http.MethodPost, "https://resume.example/download", nil)
-	req.RemoteAddr = "203.0.113.8:4321"
+	req.RemoteAddr = "192.168.1.10:4321"
+	req.Header.Set("X-Forwarded-For", "203.0.113.8")
 	req.Header.Set("User-Agent", "access-log-test/1.0")
 	req.Header.Set("Referer", "https://resume.example/?token=secret")
 	rec := httptest.NewRecorder()
@@ -243,6 +245,41 @@ func TestRemoteIP(t *testing.T) {
 		t.Run(tt.address, func(t *testing.T) {
 			if got := remoteIP(tt.address); got != tt.want {
 				t.Fatalf("remoteIP(%q) = %q, want %q", tt.address, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResponseMiddlewareForwardedClientIP(t *testing.T) {
+	store := newVisitStore()
+	handler := responseMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), false, false, store)
+
+	tests := []struct {
+		name      string
+		peer      string
+		forwarded string
+		want      string
+	}{
+		{name: "caddy forwards client", peer: "192.168.1.10:54321", forwarded: "203.0.113.8", want: "203.0.113.8"},
+		{name: "direct request with header", peer: "198.51.100.10:54321", forwarded: "203.0.113.9", want: "203.0.113.9"},
+		{name: "forwarded chain", peer: "192.168.1.10:54321", forwarded: "203.0.113.9, 198.51.100.10", want: "203.0.113.9"},
+		{name: "invalid first address", peer: "192.168.1.10:54321", forwarded: "not-an-ip, 198.51.100.10", want: "192.168.1.10"},
+		{name: "missing header", peer: "192.168.1.10:54321", want: "192.168.1.10"},
+		{name: "invalid header", peer: "192.168.1.10:54321", forwarded: "not-an-ip", want: "192.168.1.10"},
+		{name: "ipv6 client", peer: "192.168.1.10:54321", forwarded: "2001:db8::8", want: "2001:db8::8"},
+		{name: "ipv6 proxy", peer: "[2001:db8::10]:54321", forwarded: "203.0.113.8", want: "203.0.113.8"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.RemoteAddr = tt.peer
+			req.Header.Set("X-Forwarded-For", tt.forwarded)
+			handler.ServeHTTP(httptest.NewRecorder(), req)
+			snapshot := store.snapshot(time.Now())
+			if got := snapshot.Recent[0].RemoteIP; got != tt.want {
+				t.Errorf("recorded IP = %q, want %q", got, tt.want)
 			}
 		})
 	}

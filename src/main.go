@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"slices"
@@ -150,6 +151,7 @@ func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, vis
 			status = http.StatusOK
 		}
 		duration := time.Since(started)
+		clientAddress := clientIP(r)
 		if visits != nil && shouldRecordVisit(r.URL.Path, status, record404Visits) {
 			if err := visits.Record(visit{
 				Time:          started,
@@ -158,7 +160,7 @@ func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, vis
 				Status:        status,
 				Duration:      duration,
 				ResponseBytes: writer.bytes,
-				RemoteIP:      remoteIP(r.RemoteAddr),
+				RemoteIP:      clientAddress,
 				Host:          r.Host,
 				Protocol:      r.Proto,
 				UserAgent:     r.UserAgent(),
@@ -175,7 +177,7 @@ func responseMiddleware(next http.Handler, accessLogs, record404Visits bool, vis
 				"duration":       duration.String(),
 				"duration_ms":    float64(duration.Microseconds()) / 1000,
 				"response_bytes": writer.bytes,
-				"remote_ip":      remoteIP(r.RemoteAddr),
+				"remote_ip":      clientAddress,
 				"host":           r.Host,
 				"protocol":       r.Proto,
 				"user_agent":     r.UserAgent(),
@@ -198,6 +200,15 @@ func remoteIP(address string) string {
 		return host
 	}
 	return address
+}
+
+func clientIP(r *http.Request) string {
+	peer := remoteIP(r.RemoteAddr)
+	forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0])
+	if address, err := netip.ParseAddr(forwarded); err == nil && address.Zone() == "" {
+		return address.Unmap().String()
+	}
+	return peer
 }
 
 type statusWriter struct {
