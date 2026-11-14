@@ -10,14 +10,17 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    assignees: [rogierlommers]
 
   - package-ecosystem: "github-actions"
+    assignees: [rogierlommers]
     directory: "/"
     patterns:
       - "*"
     multi-ecosystem-group: "infrastructure"
 
   - package-ecosystem: "docker"
+    assignees: [rogierlommers]
     directory: "/"
     patterns:
       - "*"
